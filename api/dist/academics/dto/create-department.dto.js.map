@@ -1,0 +1,1 @@
+{"version":3,"file":"create-department.dto.js","sourceRoot":"","sources":["../../../src/academics/dto/create-department.dto.ts"],"names":[],"mappings":";;;;;;;;;AAAA,OAAO,EAAE,QAAQ,EAAE,UAAU,EAAE,UAAU,EAAE,MAAM,iBAAiB,CAAC;AAEnE,MAAM,OAAO,mBAAmB;IAG9B,IAAI,CAAS;IAIb,IAAI,CAAU;CACf;AALC;IAFC,QAAQ,EAAE;IACV,UAAU,EAAE;;iDACA;AAIb;IAFC,UAAU,EAAE;IACZ,QAAQ,EAAE;;iDACG"}
