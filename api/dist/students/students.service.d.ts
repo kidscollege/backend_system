@@ -13,10 +13,10 @@ export declare class StudentsService {
             createdAt: Date;
             updatedAt: Date;
             name: string;
+            schoolId: string;
             startDate: Date;
             endDate: Date;
             isCurrent: boolean;
-            schoolId: string;
         } | null;
         currentClass: {
             id: string;
@@ -159,10 +159,10 @@ export declare class StudentsService {
             createdAt: Date;
             updatedAt: Date;
             name: string;
+            schoolId: string;
             startDate: Date;
             endDate: Date;
             isCurrent: boolean;
-            schoolId: string;
         } | null;
         currentClass: {
             id: string;

@@ -37,10 +37,10 @@ export declare class DashboardController {
             createdAt: Date;
             updatedAt: Date;
             name: string;
+            schoolId: string;
             startDate: Date;
             endDate: Date;
             isCurrent: boolean;
-            schoolId: string;
         }) | null;
     }>;
     getFinanceSummary(): Promise<{

@@ -13,15 +13,15 @@ export declare class AcademicsService {
         createdAt: Date;
         updatedAt: Date;
         name: string;
+        schoolId: string;
         startDate: Date;
         endDate: Date;
         isCurrent: boolean;
-        schoolId: string;
     }>;
     getSessions(): Promise<({
         _count: {
-            students: number;
             classes: number;
+            students: number;
         };
         terms: {
             id: string;
@@ -38,10 +38,10 @@ export declare class AcademicsService {
         createdAt: Date;
         updatedAt: Date;
         name: string;
+        schoolId: string;
         startDate: Date;
         endDate: Date;
         isCurrent: boolean;
-        schoolId: string;
     })[]>;
     getCurrentSession(): Promise<{
         terms: {
@@ -59,10 +59,10 @@ export declare class AcademicsService {
         createdAt: Date;
         updatedAt: Date;
         name: string;
+        schoolId: string;
         startDate: Date;
         endDate: Date;
         isCurrent: boolean;
-        schoolId: string;
     }>;
     createTerm(dto: CreateTermDto): Promise<{
         id: string;
@@ -89,8 +89,8 @@ export declare class AcademicsService {
         createdAt: Date;
         updatedAt: Date;
         name: string;
-        code: string | null;
         schoolId: string;
+        code: string | null;
     }>;
     getDepartments(): Promise<({
         _count: {
@@ -102,8 +102,8 @@ export declare class AcademicsService {
         createdAt: Date;
         updatedAt: Date;
         name: string;
-        code: string | null;
         schoolId: string;
+        code: string | null;
     })[]>;
     createSubject(dto: CreateSubjectDto): Promise<{
         id: string;
@@ -121,8 +121,8 @@ export declare class AcademicsService {
             createdAt: Date;
             updatedAt: Date;
             name: string;
-            code: string | null;
             schoolId: string;
+            code: string | null;
         } | null;
     } & {
         id: string;
@@ -140,10 +140,10 @@ export declare class AcademicsService {
             createdAt: Date;
             updatedAt: Date;
             name: string;
+            schoolId: string;
             startDate: Date;
             endDate: Date;
             isCurrent: boolean;
-            schoolId: string;
         };
         sections: {
             id: string;
@@ -171,10 +171,10 @@ export declare class AcademicsService {
             createdAt: Date;
             updatedAt: Date;
             name: string;
+            schoolId: string;
             startDate: Date;
             endDate: Date;
             isCurrent: boolean;
-            schoolId: string;
         };
         sections: {
             id: string;
@@ -212,20 +212,20 @@ export declare class AcademicsService {
         createdAt: Date;
         updatedAt: Date;
         name: string;
+        schoolId: string;
         startDate: Date;
         endDate: Date;
         isCurrent: boolean;
-        schoolId: string;
     }>;
     deleteSession(id: string): Promise<{
         id: string;
         createdAt: Date;
         updatedAt: Date;
         name: string;
+        schoolId: string;
         startDate: Date;
         endDate: Date;
         isCurrent: boolean;
-        schoolId: string;
     }>;
     updateClass(id: string, dto: CreateClassDto): Promise<{
         session: {
@@ -233,10 +233,10 @@ export declare class AcademicsService {
             createdAt: Date;
             updatedAt: Date;
             name: string;
+            schoolId: string;
             startDate: Date;
             endDate: Date;
             isCurrent: boolean;
-            schoolId: string;
         };
         sections: {
             id: string;

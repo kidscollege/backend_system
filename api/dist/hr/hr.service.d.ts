@@ -12,8 +12,8 @@ export declare class HrService {
             createdAt: Date;
             updatedAt: Date;
             name: string;
-            code: string | null;
             schoolId: string;
+            code: string | null;
         } | null;
     } & {
         email: string | null;
@@ -41,8 +41,8 @@ export declare class HrService {
             createdAt: Date;
             updatedAt: Date;
             name: string;
-            code: string | null;
             schoolId: string;
+            code: string | null;
         } | null;
     } & {
         email: string | null;
@@ -70,8 +70,8 @@ export declare class HrService {
             createdAt: Date;
             updatedAt: Date;
             name: string;
-            code: string | null;
             schoolId: string;
+            code: string | null;
         } | null;
         classSubjects: ({
             subject: {
@@ -136,8 +136,8 @@ export declare class HrService {
             createdAt: Date;
             updatedAt: Date;
             name: string;
-            code: string | null;
             schoolId: string;
+            code: string | null;
         } | null;
     } & {
         email: string | null;
