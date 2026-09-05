@@ -13,66 +13,73 @@ export class DashboardService {
   constructor(private prisma: PrismaService) {}
 
   async getOverview() {
-    const [
-      totalStudents,
-      activeStudents,
-      totalStaff,
-      activeStaff,
-      totalApplications,
-      pendingApplications,
-      totalInvoices,
-      pendingInvoices,
-      totalRevenue,
-      currentSession,
-    ] = await Promise.all([
-      this.prisma.student.count(),
-      this.prisma.student.count({ where: { status: StudentStatus.ACTIVE } }),
-      this.prisma.staff.count(),
-      this.prisma.staff.count({ where: { status: EmploymentStatus.ACTIVE } }),
-      this.prisma.admissionApplication.count(),
-      this.prisma.admissionApplication.count({
-        where: {
-          status: {
-            in: [ApplicationStatus.SUBMITTED, ApplicationStatus.UNDER_REVIEW],
-          },
-        },
-      }),
-      this.prisma.feeInvoice.count(),
-      this.prisma.feeInvoice.count({
-        where: {
-          status: { in: [InvoiceStatus.PENDING, InvoiceStatus.PARTIAL] },
-        },
-      }),
-      this.prisma.payment.aggregate({
-        where: { status: 'SUCCESS' },
-        _sum: { amount: true },
-      }),
-      this.prisma.academicSession.findFirst({
-        where: { isCurrent: true },
-        include: { terms: true },
-      }),
-    ]);
+    // Inside getOverview(), update the Promise.all section to include payment count
 
-    return {
-      students: {
-        total: totalStudents,
-        active: activeStudents,
+const [
+  totalStudents,
+  activeStudents,
+  totalStaff,
+  activeStaff,
+  totalApplications,
+  pendingApplications,
+  totalInvoices,
+  pendingInvoices,
+  totalRevenue,
+  totalPaymentsCount,
+  currentSession,
+] = await Promise.all([
+  this.prisma.student.count(),
+  this.prisma.student.count({ where: { status: StudentStatus.ACTIVE } }),
+  this.prisma.staff.count(),
+  this.prisma.staff.count({ where: { status: EmploymentStatus.ACTIVE } }),
+  this.prisma.admissionApplication.count(),
+  this.prisma.admissionApplication.count({
+    where: {
+      status: {
+        in: [ApplicationStatus.SUBMITTED, ApplicationStatus.UNDER_REVIEW],
       },
-      staff: {
-        total: totalStaff,
-        active: activeStaff,
-      },
-      admissions: {
-        total: totalApplications,
-        pending: pendingApplications,
-      },
-      finance: {
-        totalInvoices,
-        pendingInvoices,
-        totalRevenue: totalRevenue._sum.amount || 0,
-      },
-      currentSession,
-    };
+    },
+  }),
+  this.prisma.feeInvoice.count(),
+  this.prisma.feeInvoice.count({
+    where: {
+      status: { in: [InvoiceStatus.PENDING, InvoiceStatus.PARTIAL] },
+    },
+  }),
+  this.prisma.payment.aggregate({
+    where: { status: "SUCCESS" },
+    _sum: { amount: true },
+  }),
+  this.prisma.payment.count({
+    where: { status: "SUCCESS" },
+  }),
+  this.prisma.academicSession.findFirst({
+    where: { isCurrent: true },
+    include: { terms: true },
+  }),
+]);
+
+return {
+  students: {
+    total: totalStudents,
+    active: activeStudents,
+  },
+  staff: {
+    total: totalStaff,
+    active: activeStaff,
+  },
+  admissions: {
+    total: totalApplications,
+    pending: pendingApplications,
+  },
+  finance: {
+    totalInvoices,
+    pendingInvoices,
+    totalRevenue: totalRevenue._sum.amount || 0,
+    totalPayments: totalPaymentsCount,   // ← new field
+  },
+  currentSession,
+};
   }
 
   async getFinanceSummary() {

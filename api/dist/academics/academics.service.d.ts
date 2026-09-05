@@ -10,157 +10,157 @@ export declare class AcademicsService {
     constructor(prisma: PrismaService);
     createSession(dto: CreateSessionDto): Promise<{
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         name: string;
         startDate: Date;
         endDate: Date;
         isCurrent: boolean;
-        createdAt: Date;
-        updatedAt: Date;
         schoolId: string;
     }>;
     getSessions(): Promise<({
+        _count: {
+            students: number;
+            classes: number;
+        };
         terms: {
             id: string;
+            createdAt: Date;
+            updatedAt: Date;
             name: string;
+            sessionId: string;
             startDate: Date;
             endDate: Date;
             isCurrent: boolean;
-            createdAt: Date;
-            updatedAt: Date;
-            sessionId: string;
         }[];
-        _count: {
-            classes: number;
-            students: number;
-        };
     } & {
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         name: string;
         startDate: Date;
         endDate: Date;
         isCurrent: boolean;
-        createdAt: Date;
-        updatedAt: Date;
         schoolId: string;
     })[]>;
     getCurrentSession(): Promise<{
         terms: {
             id: string;
+            createdAt: Date;
+            updatedAt: Date;
             name: string;
+            sessionId: string;
             startDate: Date;
             endDate: Date;
             isCurrent: boolean;
-            createdAt: Date;
-            updatedAt: Date;
-            sessionId: string;
         }[];
     } & {
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         name: string;
         startDate: Date;
         endDate: Date;
         isCurrent: boolean;
-        createdAt: Date;
-        updatedAt: Date;
         schoolId: string;
     }>;
     createTerm(dto: CreateTermDto): Promise<{
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         name: string;
+        sessionId: string;
         startDate: Date;
         endDate: Date;
         isCurrent: boolean;
-        createdAt: Date;
-        updatedAt: Date;
-        sessionId: string;
     }>;
     getTermsBySession(sessionId: string): Promise<{
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         name: string;
+        sessionId: string;
         startDate: Date;
         endDate: Date;
         isCurrent: boolean;
-        createdAt: Date;
-        updatedAt: Date;
-        sessionId: string;
     }[]>;
     createDepartment(dto: CreateDepartmentDto): Promise<{
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
-        schoolId: string;
+        name: string;
         code: string | null;
+        schoolId: string;
     }>;
     getDepartments(): Promise<({
         _count: {
-            subjects: number;
             staff: number;
+            subjects: number;
         };
     } & {
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
-        schoolId: string;
+        name: string;
         code: string | null;
+        schoolId: string;
     })[]>;
     createSubject(dto: CreateSubjectDto): Promise<{
         id: string;
-        name: string;
+        isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
         code: string | null;
         description: string | null;
-        isActive: boolean;
         departmentId: string | null;
     }>;
     getSubjects(): Promise<({
         department: {
             id: string;
-            name: string;
             createdAt: Date;
             updatedAt: Date;
-            schoolId: string;
+            name: string;
             code: string | null;
+            schoolId: string;
         } | null;
     } & {
         id: string;
-        name: string;
+        isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
         code: string | null;
         description: string | null;
-        isActive: boolean;
         departmentId: string | null;
     })[]>;
     createClass(dto: CreateClassDto): Promise<{
         session: {
             id: string;
+            createdAt: Date;
+            updatedAt: Date;
             name: string;
             startDate: Date;
             endDate: Date;
             isCurrent: boolean;
-            createdAt: Date;
-            updatedAt: Date;
             schoolId: string;
         };
         sections: {
             id: string;
-            name: string;
             createdAt: Date;
             updatedAt: Date;
+            name: string;
             classId: string;
         }[];
     } & {
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
         sessionId: string;
+        campusId: string | null;
         level: string | null;
         capacity: number | null;
-        campusId: string | null;
     }>;
     getClasses(sessionId?: string): Promise<({
         _count: {
@@ -168,43 +168,121 @@ export declare class AcademicsService {
         };
         session: {
             id: string;
+            createdAt: Date;
+            updatedAt: Date;
             name: string;
             startDate: Date;
             endDate: Date;
             isCurrent: boolean;
-            createdAt: Date;
-            updatedAt: Date;
             schoolId: string;
         };
         sections: {
             id: string;
-            name: string;
             createdAt: Date;
             updatedAt: Date;
+            name: string;
             classId: string;
         }[];
     } & {
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
         sessionId: string;
+        campusId: string | null;
         level: string | null;
         capacity: number | null;
-        campusId: string | null;
     })[]>;
     createSection(dto: CreateSectionDto): Promise<{
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
         classId: string;
     }>;
     getSectionsByClass(classId: string): Promise<{
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
         classId: string;
     }[]>;
+    updateSession(id: string, dto: CreateSessionDto): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        name: string;
+        startDate: Date;
+        endDate: Date;
+        isCurrent: boolean;
+        schoolId: string;
+    }>;
+    deleteSession(id: string): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        name: string;
+        startDate: Date;
+        endDate: Date;
+        isCurrent: boolean;
+        schoolId: string;
+    }>;
+    updateClass(id: string, dto: CreateClassDto): Promise<{
+        session: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            name: string;
+            startDate: Date;
+            endDate: Date;
+            isCurrent: boolean;
+            schoolId: string;
+        };
+        sections: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            name: string;
+            classId: string;
+        }[];
+    } & {
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        name: string;
+        sessionId: string;
+        campusId: string | null;
+        level: string | null;
+        capacity: number | null;
+    }>;
+    deleteClass(id: string): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        name: string;
+        sessionId: string;
+        campusId: string | null;
+        level: string | null;
+        capacity: number | null;
+    }>;
+    updateSubject(id: string, dto: CreateSubjectDto): Promise<{
+        id: string;
+        isActive: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+        name: string;
+        code: string | null;
+        description: string | null;
+        departmentId: string | null;
+    }>;
+    deleteSubject(id: string): Promise<{
+        id: string;
+        isActive: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+        name: string;
+        code: string | null;
+        description: string | null;
+        departmentId: string | null;
+    }>;
 }

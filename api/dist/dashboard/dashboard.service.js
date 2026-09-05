@@ -16,7 +16,7 @@ let DashboardService = class DashboardService {
         this.prisma = prisma;
     }
     async getOverview() {
-        const [totalStudents, activeStudents, totalStaff, activeStaff, totalApplications, pendingApplications, totalInvoices, pendingInvoices, totalRevenue, currentSession,] = await Promise.all([
+        const [totalStudents, activeStudents, totalStaff, activeStaff, totalApplications, pendingApplications, totalInvoices, pendingInvoices, totalRevenue, totalPaymentsCount, currentSession,] = await Promise.all([
             this.prisma.student.count(),
             this.prisma.student.count({ where: { status: StudentStatus.ACTIVE } }),
             this.prisma.staff.count(),
@@ -36,8 +36,11 @@ let DashboardService = class DashboardService {
                 },
             }),
             this.prisma.payment.aggregate({
-                where: { status: 'SUCCESS' },
+                where: { status: "SUCCESS" },
                 _sum: { amount: true },
+            }),
+            this.prisma.payment.count({
+                where: { status: "SUCCESS" },
             }),
             this.prisma.academicSession.findFirst({
                 where: { isCurrent: true },
@@ -61,6 +64,7 @@ let DashboardService = class DashboardService {
                 totalInvoices,
                 pendingInvoices,
                 totalRevenue: totalRevenue._sum.amount || 0,
+                totalPayments: totalPaymentsCount,
             },
             currentSession,
         };

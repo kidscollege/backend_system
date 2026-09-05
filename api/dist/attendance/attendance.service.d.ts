@@ -7,20 +7,20 @@ export declare class AttendanceService {
     markAttendance(dto: MarkAttendanceDto, markedById?: string): Promise<{
         student: {
             id: string;
-            admissionNumber: string;
             firstName: string;
             lastName: string;
+            admissionNumber: string;
         };
     } & {
         id: string;
-        studentId: string;
-        termId: string;
-        date: Date;
-        status: import("@prisma/client").$Enums.AttendanceStatus;
-        remark: string | null;
-        markedById: string | null;
         createdAt: Date;
         updatedAt: Date;
+        status: import("@prisma/client").$Enums.AttendanceStatus;
+        studentId: string;
+        termId: string;
+        remark: string | null;
+        date: Date;
+        markedById: string | null;
     }>;
     bulkMarkAttendance(dto: BulkMarkAttendanceDto, markedById?: string): Promise<{
         message: string;
@@ -43,14 +43,14 @@ export declare class AttendanceService {
         };
         records: {
             id: string;
-            studentId: string;
-            termId: string;
-            date: Date;
-            status: import("@prisma/client").$Enums.AttendanceStatus;
-            remark: string | null;
-            markedById: string | null;
             createdAt: Date;
             updatedAt: Date;
+            status: import("@prisma/client").$Enums.AttendanceStatus;
+            studentId: string;
+            termId: string;
+            remark: string | null;
+            date: Date;
+            markedById: string | null;
         }[];
     }>;
     getClassAttendance(classId: string, date: string, termId: string): Promise<{
@@ -60,9 +60,9 @@ export declare class AttendanceService {
         attendance: {
             student: {
                 id: string;
-                admissionNumber: string;
                 firstName: string;
                 lastName: string;
+                admissionNumber: string;
             };
             status: import("@prisma/client").$Enums.AttendanceStatus | null;
             remark: string | null;
@@ -71,15 +71,15 @@ export declare class AttendanceService {
     getAttendanceByDate(date: string, termId: string): Promise<({
         student: {
             id: string;
-            admissionNumber: string;
             firstName: string;
             lastName: string;
+            admissionNumber: string;
             currentClass: {
                 id: string;
                 createdAt: Date;
                 updatedAt: Date;
-                sessionId: string;
                 name: string;
+                sessionId: string;
                 campusId: string | null;
                 level: string | null;
                 capacity: number | null;
@@ -87,13 +87,13 @@ export declare class AttendanceService {
         };
     } & {
         id: string;
-        studentId: string;
-        termId: string;
-        date: Date;
-        status: import("@prisma/client").$Enums.AttendanceStatus;
-        remark: string | null;
-        markedById: string | null;
         createdAt: Date;
         updatedAt: Date;
+        status: import("@prisma/client").$Enums.AttendanceStatus;
+        studentId: string;
+        termId: string;
+        remark: string | null;
+        date: Date;
+        markedById: string | null;
     })[]>;
 }

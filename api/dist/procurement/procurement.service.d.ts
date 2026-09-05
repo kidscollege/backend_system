@@ -8,53 +8,53 @@ export declare class ProcurementService {
     constructor(prisma: PrismaService);
     private generateRequestNo;
     createSupplier(dto: CreateSupplierDto): Promise<{
-        id: string;
-        name: string;
-        contactPerson: string | null;
-        phone: string | null;
         email: string | null;
-        address: string | null;
+        id: string;
+        phone: string | null;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
+        address: string | null;
+        contactPerson: string | null;
     }>;
     getSuppliers(): Promise<{
-        id: string;
-        name: string;
-        contactPerson: string | null;
-        phone: string | null;
         email: string | null;
-        address: string | null;
+        id: string;
+        phone: string | null;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
+        address: string | null;
+        contactPerson: string | null;
     }[]>;
     getSupplier(id: string): Promise<{
         purchaseOrders: {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            orderNo: string;
-            supplierId: string | null;
             status: string;
             totalAmount: Prisma.Decimal;
+            orderNo: string;
+            supplierId: string | null;
             orderedAt: Date | null;
         }[];
     } & {
-        id: string;
-        name: string;
-        contactPerson: string | null;
-        phone: string | null;
         email: string | null;
-        address: string | null;
+        id: string;
+        phone: string | null;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
+        address: string | null;
+        contactPerson: string | null;
     }>;
     createPurchaseRequest(dto: CreatePurchaseRequestDto, requestedById?: string): Promise<{
         items: {
             id: string;
+            total: Prisma.Decimal;
             description: string;
             quantity: number;
             unitPrice: Prisma.Decimal;
-            total: Prisma.Decimal;
             purchaseRequestId: string;
         }[];
     } & {
@@ -62,18 +62,18 @@ export declare class ProcurementService {
         createdAt: Date;
         updatedAt: Date;
         status: import("@prisma/client").$Enums.PurchaseRequestStatus;
+        notes: string | null;
         totalAmount: Prisma.Decimal | null;
         requestNo: string;
         requestedById: string | null;
-        notes: string | null;
     }>;
     getPurchaseRequests(status?: PurchaseRequestStatus): Promise<({
         items: {
             id: string;
+            total: Prisma.Decimal;
             description: string;
             quantity: number;
             unitPrice: Prisma.Decimal;
-            total: Prisma.Decimal;
             purchaseRequestId: string;
         }[];
     } & {
@@ -81,18 +81,18 @@ export declare class ProcurementService {
         createdAt: Date;
         updatedAt: Date;
         status: import("@prisma/client").$Enums.PurchaseRequestStatus;
+        notes: string | null;
         totalAmount: Prisma.Decimal | null;
         requestNo: string;
         requestedById: string | null;
-        notes: string | null;
     })[]>;
     getPurchaseRequest(id: string): Promise<{
         items: {
             id: string;
+            total: Prisma.Decimal;
             description: string;
             quantity: number;
             unitPrice: Prisma.Decimal;
-            total: Prisma.Decimal;
             purchaseRequestId: string;
         }[];
     } & {
@@ -100,18 +100,18 @@ export declare class ProcurementService {
         createdAt: Date;
         updatedAt: Date;
         status: import("@prisma/client").$Enums.PurchaseRequestStatus;
+        notes: string | null;
         totalAmount: Prisma.Decimal | null;
         requestNo: string;
         requestedById: string | null;
-        notes: string | null;
     }>;
     updateRequestStatus(id: string, status: PurchaseRequestStatus): Promise<{
         items: {
             id: string;
+            total: Prisma.Decimal;
             description: string;
             quantity: number;
             unitPrice: Prisma.Decimal;
-            total: Prisma.Decimal;
             purchaseRequestId: string;
         }[];
     } & {
@@ -119,16 +119,16 @@ export declare class ProcurementService {
         createdAt: Date;
         updatedAt: Date;
         status: import("@prisma/client").$Enums.PurchaseRequestStatus;
+        notes: string | null;
         totalAmount: Prisma.Decimal | null;
         requestNo: string;
         requestedById: string | null;
-        notes: string | null;
     }>;
     createInventoryItem(dto: CreateInventoryItemDto): Promise<{
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
         quantity: number;
         sku: string | null;
         category: string | null;
@@ -138,9 +138,9 @@ export declare class ProcurementService {
     }>;
     getInventoryItems(category?: string): Promise<{
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
         quantity: number;
         sku: string | null;
         category: string | null;
@@ -150,9 +150,9 @@ export declare class ProcurementService {
     }[]>;
     getInventoryItem(id: string): Promise<{
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
         quantity: number;
         sku: string | null;
         category: string | null;
@@ -162,9 +162,9 @@ export declare class ProcurementService {
     }>;
     updateStock(id: string, quantity: number): Promise<{
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
         quantity: number;
         sku: string | null;
         category: string | null;
@@ -174,9 +174,9 @@ export declare class ProcurementService {
     }>;
     getLowStockItems(): Promise<{
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
         quantity: number;
         sku: string | null;
         category: string | null;

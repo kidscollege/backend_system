@@ -10,34 +10,34 @@ export declare class FinanceService {
     private generateReceiptNumber;
     createFeeStructure(dto: CreateFeeStructureDto): Promise<{
         id: string;
-        name: string;
-        description: string | null;
-        amount: Prisma.Decimal;
-        classId: string | null;
-        sessionId: string | null;
-        termId: string | null;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
+        sessionId: string | null;
+        classId: string | null;
+        description: string | null;
+        amount: Prisma.Decimal;
+        termId: string | null;
     }>;
     getFeeStructures(): Promise<{
         id: string;
-        name: string;
-        description: string | null;
-        amount: Prisma.Decimal;
-        classId: string | null;
-        sessionId: string | null;
-        termId: string | null;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
+        sessionId: string | null;
+        classId: string | null;
+        description: string | null;
+        amount: Prisma.Decimal;
+        termId: string | null;
     }[]>;
     createInvoice(dto: CreateInvoiceDto): Promise<{
         student: {
             id: string;
-            admissionNumber: string;
             firstName: string;
             lastName: string;
+            admissionNumber: string;
         };
         items: {
             id: string;
@@ -48,24 +48,24 @@ export declare class FinanceService {
         }[];
     } & {
         id: string;
-        sessionId: string | null;
-        termId: string | null;
         createdAt: Date;
         updatedAt: Date;
+        status: import("@prisma/client").$Enums.InvoiceStatus;
+        sessionId: string | null;
+        studentId: string;
+        termId: string | null;
+        dueDate: Date | null;
         invoiceNumber: string;
         totalAmount: Prisma.Decimal;
         amountPaid: Prisma.Decimal;
         balance: Prisma.Decimal;
-        status: import("@prisma/client").$Enums.InvoiceStatus;
-        dueDate: Date | null;
-        studentId: string;
     }>;
     getInvoices(studentId?: string): Promise<({
         student: {
             id: string;
-            admissionNumber: string;
             firstName: string;
             lastName: string;
+            admissionNumber: string;
         };
         items: {
             id: string;
@@ -76,44 +76,40 @@ export declare class FinanceService {
         }[];
         payments: {
             id: string;
-            amount: Prisma.Decimal;
             createdAt: Date;
             updatedAt: Date;
             status: import("@prisma/client").$Enums.PaymentStatus;
+            amount: Prisma.Decimal;
             invoiceId: string;
             method: import("@prisma/client").$Enums.PaymentMethod;
+            notes: string | null;
             paystackRef: string | null;
             paystackAccessCode: string | null;
             receiptNumber: string | null;
             paidAt: Date | null;
             recordedById: string | null;
-            notes: string | null;
         }[];
     } & {
         id: string;
-        sessionId: string | null;
-        termId: string | null;
         createdAt: Date;
         updatedAt: Date;
+        status: import("@prisma/client").$Enums.InvoiceStatus;
+        sessionId: string | null;
+        studentId: string;
+        termId: string | null;
+        dueDate: Date | null;
         invoiceNumber: string;
         totalAmount: Prisma.Decimal;
         amountPaid: Prisma.Decimal;
         balance: Prisma.Decimal;
-        status: import("@prisma/client").$Enums.InvoiceStatus;
-        dueDate: Date | null;
-        studentId: string;
     })[]>;
     getInvoice(id: string): Promise<{
         student: {
             id: string;
-            sessionId: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-            status: import("@prisma/client").$Enums.StudentStatus;
-            userId: string | null;
-            admissionNumber: string;
             firstName: string;
             lastName: string;
+            createdAt: Date;
+            updatedAt: Date;
             middleName: string | null;
             gender: string | null;
             dateOfBirth: Date | null;
@@ -121,10 +117,14 @@ export declare class FinanceService {
             nationality: string | null;
             religion: string | null;
             address: string | null;
-            photoUrl: string | null;
+            status: import("@prisma/client").$Enums.StudentStatus;
             admissionDate: Date | null;
             currentClassId: string | null;
             currentSectionId: string | null;
+            sessionId: string | null;
+            admissionNumber: string;
+            photoUrl: string | null;
+            userId: string | null;
         };
         items: {
             id: string;
@@ -135,55 +135,55 @@ export declare class FinanceService {
         }[];
         payments: {
             id: string;
-            amount: Prisma.Decimal;
             createdAt: Date;
             updatedAt: Date;
             status: import("@prisma/client").$Enums.PaymentStatus;
+            amount: Prisma.Decimal;
             invoiceId: string;
             method: import("@prisma/client").$Enums.PaymentMethod;
+            notes: string | null;
             paystackRef: string | null;
             paystackAccessCode: string | null;
             receiptNumber: string | null;
             paidAt: Date | null;
             recordedById: string | null;
-            notes: string | null;
         }[];
     } & {
         id: string;
-        sessionId: string | null;
-        termId: string | null;
         createdAt: Date;
         updatedAt: Date;
+        status: import("@prisma/client").$Enums.InvoiceStatus;
+        sessionId: string | null;
+        studentId: string;
+        termId: string | null;
+        dueDate: Date | null;
         invoiceNumber: string;
         totalAmount: Prisma.Decimal;
         amountPaid: Prisma.Decimal;
         balance: Prisma.Decimal;
-        status: import("@prisma/client").$Enums.InvoiceStatus;
-        dueDate: Date | null;
-        studentId: string;
     }>;
     recordPayment(dto: RecordPaymentDto): Promise<{
         payment: {
             id: string;
-            amount: Prisma.Decimal;
             createdAt: Date;
             updatedAt: Date;
             status: import("@prisma/client").$Enums.PaymentStatus;
+            amount: Prisma.Decimal;
             invoiceId: string;
             method: import("@prisma/client").$Enums.PaymentMethod;
+            notes: string | null;
             paystackRef: string | null;
             paystackAccessCode: string | null;
             receiptNumber: string | null;
             paidAt: Date | null;
             recordedById: string | null;
-            notes: string | null;
         };
         invoice: {
             student: {
                 id: string;
-                admissionNumber: string;
                 firstName: string;
                 lastName: string;
+                admissionNumber: string;
             };
             items: {
                 id: string;
@@ -194,32 +194,32 @@ export declare class FinanceService {
             }[];
             payments: {
                 id: string;
-                amount: Prisma.Decimal;
                 createdAt: Date;
                 updatedAt: Date;
                 status: import("@prisma/client").$Enums.PaymentStatus;
+                amount: Prisma.Decimal;
                 invoiceId: string;
                 method: import("@prisma/client").$Enums.PaymentMethod;
+                notes: string | null;
                 paystackRef: string | null;
                 paystackAccessCode: string | null;
                 receiptNumber: string | null;
                 paidAt: Date | null;
                 recordedById: string | null;
-                notes: string | null;
             }[];
         } & {
             id: string;
-            sessionId: string | null;
-            termId: string | null;
             createdAt: Date;
             updatedAt: Date;
+            status: import("@prisma/client").$Enums.InvoiceStatus;
+            sessionId: string | null;
+            studentId: string;
+            termId: string | null;
+            dueDate: Date | null;
             invoiceNumber: string;
             totalAmount: Prisma.Decimal;
             amountPaid: Prisma.Decimal;
             balance: Prisma.Decimal;
-            status: import("@prisma/client").$Enums.InvoiceStatus;
-            dueDate: Date | null;
-            studentId: string;
         };
     }>;
     getStudentBalances(studentId: string): Promise<{
@@ -227,17 +227,66 @@ export declare class FinanceService {
         totalBalance: number;
         invoices: {
             id: string;
-            sessionId: string | null;
-            termId: string | null;
             createdAt: Date;
             updatedAt: Date;
+            status: import("@prisma/client").$Enums.InvoiceStatus;
+            sessionId: string | null;
+            studentId: string;
+            termId: string | null;
+            dueDate: Date | null;
             invoiceNumber: string;
             totalAmount: Prisma.Decimal;
             amountPaid: Prisma.Decimal;
             balance: Prisma.Decimal;
-            status: import("@prisma/client").$Enums.InvoiceStatus;
-            dueDate: Date | null;
-            studentId: string;
         }[];
+    }>;
+    updateFeeStructure(id: string, dto: CreateFeeStructureDto): Promise<{
+        id: string;
+        isActive: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+        name: string;
+        sessionId: string | null;
+        classId: string | null;
+        description: string | null;
+        amount: Prisma.Decimal;
+        termId: string | null;
+    }>;
+    deleteFeeStructure(id: string): Promise<{
+        id: string;
+        isActive: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+        name: string;
+        sessionId: string | null;
+        classId: string | null;
+        description: string | null;
+        amount: Prisma.Decimal;
+        termId: string | null;
+    }>;
+    getFeesPaidByTerm(): Promise<{
+        termId: string | null;
+        termName: string;
+        total: number;
+        count: number;
+    }[]>;
+    getFeesPaidByClass(): Promise<{
+        classId: string | null;
+        className: string;
+        total: number;
+        count: number;
+    }[]>;
+    getFilteredPaymentsReport(filters: {
+        termId?: string;
+        classId?: string;
+        sessionId?: string;
+    }): Promise<{
+        total: number;
+        count: number;
+        filters: {
+            termId?: string;
+            classId?: string;
+            sessionId?: string;
+        };
     }>;
 }

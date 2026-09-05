@@ -174,6 +174,75 @@ let AcademicsService = class AcademicsService {
             orderBy: { name: 'asc' },
         });
     }
+    async updateSession(id, dto) {
+        const session = await this.prisma.academicSession.findUnique({ where: { id } });
+        if (!session)
+            throw new NotFoundException('Session not found');
+        if (dto.isCurrent) {
+            await this.prisma.academicSession.updateMany({
+                where: { isCurrent: true },
+                data: { isCurrent: false },
+            });
+        }
+        return this.prisma.academicSession.update({
+            where: { id },
+            data: {
+                name: dto.name,
+                startDate: new Date(dto.startDate),
+                endDate: new Date(dto.endDate),
+                isCurrent: dto.isCurrent ?? session.isCurrent,
+            },
+        });
+    }
+    async deleteSession(id) {
+        const session = await this.prisma.academicSession.findUnique({ where: { id } });
+        if (!session)
+            throw new NotFoundException('Session not found');
+        return this.prisma.academicSession.delete({ where: { id } });
+    }
+    async updateClass(id, dto) {
+        const classExists = await this.prisma.class.findUnique({ where: { id } });
+        if (!classExists)
+            throw new NotFoundException('Class not found');
+        return this.prisma.class.update({
+            where: { id },
+            data: {
+                name: dto.name,
+                level: dto.level,
+                capacity: dto.capacity,
+                sessionId: dto.sessionId,
+                campusId: dto.campusId,
+            },
+            include: { session: true, sections: true },
+        });
+    }
+    async deleteClass(id) {
+        const classExists = await this.prisma.class.findUnique({ where: { id } });
+        if (!classExists)
+            throw new NotFoundException('Class not found');
+        return this.prisma.class.delete({ where: { id } });
+    }
+    async updateSubject(id, dto) {
+        const subject = await this.prisma.subject.findUnique({ where: { id } });
+        if (!subject)
+            throw new NotFoundException('Subject not found');
+        return this.prisma.subject.update({
+            where: { id },
+            data: {
+                name: dto.name,
+                code: dto.code,
+                description: dto.description,
+                departmentId: dto.departmentId,
+                isActive: dto.isActive ?? subject.isActive,
+            },
+        });
+    }
+    async deleteSubject(id) {
+        const subject = await this.prisma.subject.findUnique({ where: { id } });
+        if (!subject)
+            throw new NotFoundException('Subject not found');
+        return this.prisma.subject.delete({ where: { id } });
+    }
 };
 AcademicsService = __decorate([
     Injectable(),

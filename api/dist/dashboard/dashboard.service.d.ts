@@ -19,27 +19,28 @@ export declare class DashboardService {
             totalInvoices: number;
             pendingInvoices: number;
             totalRevenue: number | import("@prisma/client-runtime-utils").Decimal;
+            totalPayments: number;
         };
         currentSession: ({
             terms: {
                 id: string;
+                createdAt: Date;
+                updatedAt: Date;
                 name: string;
+                sessionId: string;
                 startDate: Date;
                 endDate: Date;
                 isCurrent: boolean;
-                createdAt: Date;
-                updatedAt: Date;
-                sessionId: string;
             }[];
         } & {
             id: string;
-            schoolId: string;
+            createdAt: Date;
+            updatedAt: Date;
             name: string;
             startDate: Date;
             endDate: Date;
             isCurrent: boolean;
-            createdAt: Date;
-            updatedAt: Date;
+            schoolId: string;
         }) | null;
     }>;
     getFinanceSummary(): Promise<{
@@ -62,38 +63,38 @@ export declare class DashboardService {
         recentPayments: ({
             invoice: {
                 student: {
-                    admissionNumber: string;
                     firstName: string;
                     lastName: string;
+                    admissionNumber: string;
                 };
             } & {
-                status: import("@prisma/client").$Enums.InvoiceStatus;
                 id: string;
                 createdAt: Date;
                 updatedAt: Date;
+                status: import("@prisma/client").$Enums.InvoiceStatus;
                 sessionId: string | null;
-                totalAmount: import("@prisma/client-runtime-utils").Decimal;
-                balance: import("@prisma/client-runtime-utils").Decimal;
-                amountPaid: import("@prisma/client-runtime-utils").Decimal;
                 studentId: string;
-                invoiceNumber: string;
-                dueDate: Date | null;
                 termId: string | null;
+                dueDate: Date | null;
+                invoiceNumber: string;
+                totalAmount: import("@prisma/client-runtime-utils").Decimal;
+                amountPaid: import("@prisma/client-runtime-utils").Decimal;
+                balance: import("@prisma/client-runtime-utils").Decimal;
             };
         } & {
-            status: import("@prisma/client").$Enums.PaymentStatus;
-            amount: import("@prisma/client-runtime-utils").Decimal;
             id: string;
             createdAt: Date;
             updatedAt: Date;
+            status: import("@prisma/client").$Enums.PaymentStatus;
+            amount: import("@prisma/client-runtime-utils").Decimal;
             invoiceId: string;
             method: import("@prisma/client").$Enums.PaymentMethod;
+            notes: string | null;
             paystackRef: string | null;
             paystackAccessCode: string | null;
             receiptNumber: string | null;
             paidAt: Date | null;
             recordedById: string | null;
-            notes: string | null;
         })[];
     }>;
     getStudentSummary(): Promise<{
@@ -119,17 +120,17 @@ export declare class DashboardService {
     getRecentActivities(): Promise<{
         recentStudents: {
             id: string;
+            firstName: string;
+            lastName: string;
             createdAt: Date;
             admissionNumber: string;
-            firstName: string;
-            lastName: string;
         }[];
         recentApplications: {
-            status: import("@prisma/client").$Enums.ApplicationStatus;
             id: string;
-            createdAt: Date;
             firstName: string;
             lastName: string;
+            createdAt: Date;
+            status: import("@prisma/client").$Enums.ApplicationStatus;
             applicationNo: string;
         }[];
         recentPayments: ({
@@ -141,19 +142,19 @@ export declare class DashboardService {
                 invoiceNumber: string;
             };
         } & {
-            status: import("@prisma/client").$Enums.PaymentStatus;
-            amount: import("@prisma/client-runtime-utils").Decimal;
             id: string;
             createdAt: Date;
             updatedAt: Date;
+            status: import("@prisma/client").$Enums.PaymentStatus;
+            amount: import("@prisma/client-runtime-utils").Decimal;
             invoiceId: string;
             method: import("@prisma/client").$Enums.PaymentMethod;
+            notes: string | null;
             paystackRef: string | null;
             paystackAccessCode: string | null;
             receiptNumber: string | null;
             paidAt: Date | null;
             recordedById: string | null;
-            notes: string | null;
         })[];
     }>;
 }

@@ -10,7 +10,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-import { Controller, Get, Post, Body, Param, Query, UseGuards, } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, } from '@nestjs/common';
 import { FinanceService } from './finance.service.js';
 import { CreateFeeStructureDto } from './dto/create-fee-structure.dto.js';
 import { CreateInvoiceDto } from './dto/create-invoice.dto.js';
@@ -44,6 +44,25 @@ let FinanceController = class FinanceController {
     }
     getStudentBalance(studentId) {
         return this.financeService.getStudentBalances(studentId);
+    }
+    updateFeeStructure(id, dto) {
+        return this.financeService.updateFeeStructure(id, dto);
+    }
+    deleteFeeStructure(id) {
+        return this.financeService.deleteFeeStructure(id);
+    }
+    getFeesByTerm() {
+        return this.financeService.getFeesPaidByTerm();
+    }
+    getFeesByClass() {
+        return this.financeService.getFeesPaidByClass();
+    }
+    getPaymentsSummary(termId, classId, sessionId) {
+        return this.financeService.getFilteredPaymentsReport({
+            termId,
+            classId,
+            sessionId,
+        });
     }
 };
 __decorate([
@@ -98,6 +117,47 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], FinanceController.prototype, "getStudentBalance", null);
+__decorate([
+    Patch('fee-structures/:id'),
+    Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.BURSAR),
+    __param(0, Param('id')),
+    __param(1, Body()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, CreateFeeStructureDto]),
+    __metadata("design:returntype", void 0)
+], FinanceController.prototype, "updateFeeStructure", null);
+__decorate([
+    Delete('fee-structures/:id'),
+    Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.BURSAR),
+    __param(0, Param('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], FinanceController.prototype, "deleteFeeStructure", null);
+__decorate([
+    Get('reports/by-term'),
+    Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.BURSAR, Role.PRINCIPAL),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], FinanceController.prototype, "getFeesByTerm", null);
+__decorate([
+    Get('reports/by-class'),
+    Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.BURSAR, Role.PRINCIPAL),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], FinanceController.prototype, "getFeesByClass", null);
+__decorate([
+    Get('reports/summary'),
+    Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.BURSAR, Role.PRINCIPAL),
+    __param(0, Query('termId')),
+    __param(1, Query('classId')),
+    __param(2, Query('sessionId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, String]),
+    __metadata("design:returntype", void 0)
+], FinanceController.prototype, "getPaymentsSummary", null);
 FinanceController = __decorate([
     Controller('finance'),
     UseGuards(JwtAuthGuard, RolesGuard),

@@ -2,6 +2,8 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
+  Delete,
   Body,
   Param,
   Query,
@@ -99,5 +101,42 @@ export class AcademicsController {
   @Get('classes/:classId/sections')
   getSections(@Param('classId') classId: string) {
     return this.academicsService.getSectionsByClass(classId);
+  }
+    // ===== UPDATE / DELETE =====
+
+  @Patch('sessions/:id')
+  @Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.PRINCIPAL)
+  updateSession(@Param('id') id: string, @Body() dto: CreateSessionDto) {
+    return this.academicsService.updateSession(id, dto);
+  }
+
+  @Delete('sessions/:id')
+  @Roles(Role.SUPER_ADMIN, Role.MANAGEMENT)
+  deleteSession(@Param('id') id: string) {
+    return this.academicsService.deleteSession(id);
+  }
+
+  @Patch('classes/:id')
+  @Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.PRINCIPAL)
+  updateClass(@Param('id') id: string, @Body() dto: CreateClassDto) {
+    return this.academicsService.updateClass(id, dto);
+  }
+
+  @Delete('classes/:id')
+  @Roles(Role.SUPER_ADMIN, Role.MANAGEMENT)
+  deleteClass(@Param('id') id: string) {
+    return this.academicsService.deleteClass(id);
+  }
+
+  @Patch('subjects/:id')
+  @Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.PRINCIPAL)
+  updateSubject(@Param('id') id: string, @Body() dto: CreateSubjectDto) {
+    return this.academicsService.updateSubject(id, dto);
+  }
+
+  @Delete('subjects/:id')
+  @Roles(Role.SUPER_ADMIN, Role.MANAGEMENT)
+  deleteSubject(@Param('id') id: string) {
+    return this.academicsService.deleteSubject(id);
   }
 }

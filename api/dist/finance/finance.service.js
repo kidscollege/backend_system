@@ -199,6 +199,109 @@ let FinanceService = class FinanceService {
             invoices,
         };
     }
+    async updateFeeStructure(id, dto) {
+        const item = await this.prisma.feeStructure.findUnique({ where: { id } });
+        if (!item)
+            throw new NotFoundException('Fee structure not found');
+        return this.prisma.feeStructure.update({
+            where: { id },
+            data: {
+                name: dto.name,
+                description: dto.description,
+                amount: new Prisma.Decimal(dto.amount),
+                classId: dto.classId,
+                sessionId: dto.sessionId,
+                termId: dto.termId,
+                isActive: dto.isActive ?? item.isActive,
+            },
+        });
+    }
+    async deleteFeeStructure(id) {
+        const item = await this.prisma.feeStructure.findUnique({ where: { id } });
+        if (!item)
+            throw new NotFoundException('Fee structure not found');
+        return this.prisma.feeStructure.delete({ where: { id } });
+    }
+    async getFeesPaidByTerm() {
+        const payments = await this.prisma.payment.findMany({
+            where: { status: 'SUCCESS' },
+            include: {
+                invoice: true,
+            },
+        });
+        const terms = await this.prisma.term.findMany();
+        const termMap = new Map(terms.map((t) => [t.id, t.name]));
+        const map = {};
+        for (const p of payments) {
+            const termId = p.invoice?.termId || 'none';
+            const termName = termId !== 'none' ? termMap.get(termId) || 'Unknown Term' : 'No Term';
+            if (!map[termId]) {
+                map[termId] = {
+                    termId: p.invoice?.termId || null,
+                    termName,
+                    total: 0,
+                    count: 0,
+                };
+            }
+            map[termId].total += Number(p.amount);
+            map[termId].count += 1;
+        }
+        return Object.values(map);
+    }
+    async getFeesPaidByClass() {
+        const payments = await this.prisma.payment.findMany({
+            where: { status: 'SUCCESS' },
+            include: {
+                invoice: {
+                    include: {
+                        student: true,
+                    },
+                },
+            },
+        });
+        const classes = await this.prisma.class.findMany();
+        const classMap = new Map(classes.map((c) => [c.id, c.name]));
+        const map = {};
+        for (const p of payments) {
+            const classId = p.invoice?.student?.currentClassId || 'none';
+            const className = classId !== 'none' ? classMap.get(classId) || 'Unknown Class' : 'Unassigned';
+            if (!map[classId]) {
+                map[classId] = {
+                    classId: p.invoice?.student?.currentClassId || null,
+                    className,
+                    total: 0,
+                    count: 0,
+                };
+            }
+            map[classId].total += Number(p.amount);
+            map[classId].count += 1;
+        }
+        return Object.values(map);
+    }
+    async getFilteredPaymentsReport(filters) {
+        const payments = await this.prisma.payment.findMany({
+            where: {
+                status: 'SUCCESS',
+                invoice: {
+                    ...(filters.termId ? { termId: filters.termId } : {}),
+                    ...(filters.sessionId ? { sessionId: filters.sessionId } : {}),
+                    ...(filters.classId
+                        ? {
+                            student: {
+                                currentClassId: filters.classId,
+                            },
+                        }
+                        : {}),
+                },
+            },
+        });
+        const total = payments.reduce((sum, p) => sum + Number(p.amount), 0);
+        return {
+            total,
+            count: payments.length,
+            filters,
+        };
+    }
 };
 FinanceService = __decorate([
     Injectable(),

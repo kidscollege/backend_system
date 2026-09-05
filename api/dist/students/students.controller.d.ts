@@ -7,6 +7,16 @@ export declare class StudentsController {
     private readonly studentsService;
     constructor(studentsService: StudentsService);
     create(createStudentDto: CreateStudentDto): Promise<{
+        session: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            name: string;
+            startDate: Date;
+            endDate: Date;
+            isCurrent: boolean;
+            schoolId: string;
+        } | null;
         currentClass: {
             id: string;
             createdAt: Date;
@@ -23,16 +33,6 @@ export declare class StudentsController {
             updatedAt: Date;
             name: string;
             classId: string;
-        } | null;
-        session: {
-            id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            name: string;
-            schoolId: string;
-            startDate: Date;
-            endDate: Date;
-            isCurrent: boolean;
         } | null;
         guardians: ({
             parent: {
@@ -153,6 +153,16 @@ export declare class StudentsController {
         };
     }>;
     findOne(id: string): Promise<{
+        session: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            name: string;
+            startDate: Date;
+            endDate: Date;
+            isCurrent: boolean;
+            schoolId: string;
+        } | null;
         currentClass: {
             id: string;
             createdAt: Date;
@@ -169,16 +179,6 @@ export declare class StudentsController {
             updatedAt: Date;
             name: string;
             classId: string;
-        } | null;
-        session: {
-            id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            name: string;
-            schoolId: string;
-            startDate: Date;
-            endDate: Date;
-            isCurrent: boolean;
         } | null;
         guardians: ({
             parent: {

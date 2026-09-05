@@ -8,144 +8,144 @@ export declare class ResultsService {
     createAssessment(dto: CreateAssessmentDto): Promise<{
         term: {
             id: string;
-            sessionId: string;
+            createdAt: Date;
+            updatedAt: Date;
             name: string;
+            sessionId: string;
             startDate: Date;
             endDate: Date;
             isCurrent: boolean;
-            createdAt: Date;
-            updatedAt: Date;
         };
         subject: {
             id: string;
-            name: string;
+            isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            departmentId: string | null;
+            name: string;
             code: string | null;
             description: string | null;
-            isActive: boolean;
+            departmentId: string | null;
         };
     } & {
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
+        termId: string;
+        subjectId: string;
         maxScore: number;
         weight: number | null;
         assessmentDate: Date | null;
-        termId: string;
-        subjectId: string;
     }>;
     getAssessments(termId?: string, subjectId?: string): Promise<({
         term: {
             id: string;
-            sessionId: string;
+            createdAt: Date;
+            updatedAt: Date;
             name: string;
+            sessionId: string;
             startDate: Date;
             endDate: Date;
             isCurrent: boolean;
-            createdAt: Date;
-            updatedAt: Date;
         };
         subject: {
             id: string;
-            name: string;
+            isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            departmentId: string | null;
+            name: string;
             code: string | null;
             description: string | null;
-            isActive: boolean;
+            departmentId: string | null;
         };
         _count: {
             scores: number;
         };
     } & {
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
+        termId: string;
+        subjectId: string;
         maxScore: number;
         weight: number | null;
         assessmentDate: Date | null;
-        termId: string;
-        subjectId: string;
     })[]>;
     getAssessment(id: string): Promise<{
-        scores: ({
-            student: {
-                id: string;
-                admissionNumber: string;
-                firstName: string;
-                lastName: string;
-            };
-        } & {
-            studentId: string;
-            score: number | null;
-            remark: string | null;
-            assessmentId: string;
+        term: {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-        })[];
-        term: {
-            id: string;
-            sessionId: string;
             name: string;
+            sessionId: string;
             startDate: Date;
             endDate: Date;
             isCurrent: boolean;
-            createdAt: Date;
-            updatedAt: Date;
         };
         subject: {
             id: string;
-            name: string;
+            isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            departmentId: string | null;
+            name: string;
             code: string | null;
             description: string | null;
-            isActive: boolean;
+            departmentId: string | null;
         };
+        scores: ({
+            student: {
+                id: string;
+                firstName: string;
+                lastName: string;
+                admissionNumber: string;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            studentId: string;
+            assessmentId: string;
+            score: number | null;
+            remark: string | null;
+        })[];
     } & {
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
+        termId: string;
+        subjectId: string;
         maxScore: number;
         weight: number | null;
         assessmentDate: Date | null;
-        termId: string;
-        subjectId: string;
     }>;
     recordScore(dto: RecordScoreDto): Promise<{
+        student: {
+            id: string;
+            firstName: string;
+            lastName: string;
+            admissionNumber: string;
+        };
         assessment: {
             id: string;
-            name: string;
             createdAt: Date;
             updatedAt: Date;
+            name: string;
+            termId: string;
+            subjectId: string;
             maxScore: number;
             weight: number | null;
             assessmentDate: Date | null;
-            termId: string;
-            subjectId: string;
-        };
-        student: {
-            id: string;
-            admissionNumber: string;
-            firstName: string;
-            lastName: string;
         };
     } & {
-        studentId: string;
-        score: number | null;
-        remark: string | null;
-        assessmentId: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        studentId: string;
+        assessmentId: string;
+        score: number | null;
+        remark: string | null;
     }>;
     bulkRecordScores(dto: BulkRecordScoresDto): Promise<{
         message: string;
@@ -162,84 +162,84 @@ export declare class ResultsService {
             assessment: {
                 term: {
                     id: string;
-                    sessionId: string;
+                    createdAt: Date;
+                    updatedAt: Date;
                     name: string;
+                    sessionId: string;
                     startDate: Date;
                     endDate: Date;
                     isCurrent: boolean;
-                    createdAt: Date;
-                    updatedAt: Date;
                 };
                 subject: {
                     id: string;
-                    name: string;
+                    isActive: boolean;
                     createdAt: Date;
                     updatedAt: Date;
-                    departmentId: string | null;
+                    name: string;
                     code: string | null;
                     description: string | null;
-                    isActive: boolean;
+                    departmentId: string | null;
                 };
             } & {
                 id: string;
-                name: string;
                 createdAt: Date;
                 updatedAt: Date;
+                name: string;
+                termId: string;
+                subjectId: string;
                 maxScore: number;
                 weight: number | null;
                 assessmentDate: Date | null;
-                termId: string;
-                subjectId: string;
             };
         } & {
-            studentId: string;
-            score: number | null;
-            remark: string | null;
-            assessmentId: string;
             id: string;
             createdAt: Date;
             updatedAt: Date;
+            studentId: string;
+            assessmentId: string;
+            score: number | null;
+            remark: string | null;
         })[];
     }>;
     getClassResults(classId: string, assessmentId: string): Promise<{
         assessment: {
             term: {
                 id: string;
-                sessionId: string;
+                createdAt: Date;
+                updatedAt: Date;
                 name: string;
+                sessionId: string;
                 startDate: Date;
                 endDate: Date;
                 isCurrent: boolean;
-                createdAt: Date;
-                updatedAt: Date;
             };
             subject: {
                 id: string;
-                name: string;
+                isActive: boolean;
                 createdAt: Date;
                 updatedAt: Date;
-                departmentId: string | null;
+                name: string;
                 code: string | null;
                 description: string | null;
-                isActive: boolean;
+                departmentId: string | null;
             };
         } & {
             id: string;
-            name: string;
             createdAt: Date;
             updatedAt: Date;
+            name: string;
+            termId: string;
+            subjectId: string;
             maxScore: number;
             weight: number | null;
             assessmentDate: Date | null;
-            termId: string;
-            subjectId: string;
         };
         results: {
             student: {
                 id: string;
-                admissionNumber: string;
                 firstName: string;
                 lastName: string;
+                admissionNumber: string;
             };
             score: number | null;
             remark: string | null;

@@ -8,9 +8,9 @@ export declare class ResultsController {
     createAssessment(dto: CreateAssessmentDto): Promise<{
         term: {
             id: string;
-            name: string;
             createdAt: Date;
             updatedAt: Date;
+            name: string;
             sessionId: string;
             startDate: Date;
             endDate: Date;
@@ -18,31 +18,31 @@ export declare class ResultsController {
         };
         subject: {
             id: string;
-            name: string;
+            isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            departmentId: string | null;
+            name: string;
             code: string | null;
             description: string | null;
-            isActive: boolean;
+            departmentId: string | null;
         };
     } & {
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         name: string;
+        termId: string;
+        subjectId: string;
         maxScore: number;
         weight: number | null;
         assessmentDate: Date | null;
-        createdAt: Date;
-        updatedAt: Date;
-        termId: string;
-        subjectId: string;
     }>;
     getAssessments(termId?: string, subjectId?: string): Promise<({
         term: {
             id: string;
-            name: string;
             createdAt: Date;
             updatedAt: Date;
+            name: string;
             sessionId: string;
             startDate: Date;
             endDate: Date;
@@ -50,34 +50,34 @@ export declare class ResultsController {
         };
         subject: {
             id: string;
-            name: string;
+            isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            departmentId: string | null;
+            name: string;
             code: string | null;
             description: string | null;
-            isActive: boolean;
+            departmentId: string | null;
         };
         _count: {
             scores: number;
         };
     } & {
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         name: string;
+        termId: string;
+        subjectId: string;
         maxScore: number;
         weight: number | null;
         assessmentDate: Date | null;
-        createdAt: Date;
-        updatedAt: Date;
-        termId: string;
-        subjectId: string;
     })[]>;
     getAssessment(id: string): Promise<{
         term: {
             id: string;
-            name: string;
             createdAt: Date;
             updatedAt: Date;
+            name: string;
             sessionId: string;
             startDate: Date;
             endDate: Date;
@@ -85,20 +85,20 @@ export declare class ResultsController {
         };
         subject: {
             id: string;
-            name: string;
+            isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
-            departmentId: string | null;
+            name: string;
             code: string | null;
             description: string | null;
-            isActive: boolean;
+            departmentId: string | null;
         };
         scores: ({
             student: {
                 id: string;
-                admissionNumber: string;
                 firstName: string;
                 lastName: string;
+                admissionNumber: string;
             };
         } & {
             id: string;
@@ -111,32 +111,32 @@ export declare class ResultsController {
         })[];
     } & {
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         name: string;
+        termId: string;
+        subjectId: string;
         maxScore: number;
         weight: number | null;
         assessmentDate: Date | null;
-        createdAt: Date;
-        updatedAt: Date;
-        termId: string;
-        subjectId: string;
     }>;
     recordScore(dto: RecordScoreDto): Promise<{
+        student: {
+            id: string;
+            firstName: string;
+            lastName: string;
+            admissionNumber: string;
+        };
         assessment: {
             id: string;
+            createdAt: Date;
+            updatedAt: Date;
             name: string;
+            termId: string;
+            subjectId: string;
             maxScore: number;
             weight: number | null;
             assessmentDate: Date | null;
-            createdAt: Date;
-            updatedAt: Date;
-            termId: string;
-            subjectId: string;
-        };
-        student: {
-            id: string;
-            admissionNumber: string;
-            firstName: string;
-            lastName: string;
         };
     } & {
         id: string;
@@ -162,9 +162,9 @@ export declare class ResultsController {
             assessment: {
                 term: {
                     id: string;
-                    name: string;
                     createdAt: Date;
                     updatedAt: Date;
+                    name: string;
                     sessionId: string;
                     startDate: Date;
                     endDate: Date;
@@ -172,24 +172,24 @@ export declare class ResultsController {
                 };
                 subject: {
                     id: string;
-                    name: string;
+                    isActive: boolean;
                     createdAt: Date;
                     updatedAt: Date;
-                    departmentId: string | null;
+                    name: string;
                     code: string | null;
                     description: string | null;
-                    isActive: boolean;
+                    departmentId: string | null;
                 };
             } & {
                 id: string;
+                createdAt: Date;
+                updatedAt: Date;
                 name: string;
+                termId: string;
+                subjectId: string;
                 maxScore: number;
                 weight: number | null;
                 assessmentDate: Date | null;
-                createdAt: Date;
-                updatedAt: Date;
-                termId: string;
-                subjectId: string;
             };
         } & {
             id: string;
@@ -205,9 +205,9 @@ export declare class ResultsController {
         assessment: {
             term: {
                 id: string;
-                name: string;
                 createdAt: Date;
                 updatedAt: Date;
+                name: string;
                 sessionId: string;
                 startDate: Date;
                 endDate: Date;
@@ -215,31 +215,31 @@ export declare class ResultsController {
             };
             subject: {
                 id: string;
-                name: string;
+                isActive: boolean;
                 createdAt: Date;
                 updatedAt: Date;
-                departmentId: string | null;
+                name: string;
                 code: string | null;
                 description: string | null;
-                isActive: boolean;
+                departmentId: string | null;
             };
         } & {
             id: string;
+            createdAt: Date;
+            updatedAt: Date;
             name: string;
+            termId: string;
+            subjectId: string;
             maxScore: number;
             weight: number | null;
             assessmentDate: Date | null;
-            createdAt: Date;
-            updatedAt: Date;
-            termId: string;
-            subjectId: string;
         };
         results: {
             student: {
                 id: string;
-                admissionNumber: string;
                 firstName: string;
                 lastName: string;
+                admissionNumber: string;
             };
             score: number | null;
             remark: string | null;

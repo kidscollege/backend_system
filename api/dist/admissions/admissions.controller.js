@@ -10,7 +10,6 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-var _a, _b;
 import { Controller, Get, Post, Body, Param, Patch, Query, UseGuards, } from '@nestjs/common';
 import { AdmissionsService } from './admissions.service.js';
 import { CreateApplicationDto } from './dto/create-application.dto.js';
@@ -77,7 +76,7 @@ __decorate([
     __param(1, Body()),
     __param(2, CurrentUser()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, typeof (_b = typeof ReviewApplicationDto !== "undefined" && ReviewApplicationDto) === "function" ? _b : Object, Object]),
+    __metadata("design:paramtypes", [String, ReviewApplicationDto, Object]),
     __metadata("design:returntype", void 0)
 ], AdmissionsController.prototype, "review", null);
 __decorate([
@@ -100,7 +99,7 @@ __decorate([
 ], AdmissionsController.prototype, "getStats", null);
 AdmissionsController = __decorate([
     Controller('admissions'),
-    __metadata("design:paramtypes", [typeof (_a = typeof AdmissionsService !== "undefined" && AdmissionsService) === "function" ? _a : Object])
+    __metadata("design:paramtypes", [AdmissionsService])
 ], AdmissionsController);
 export { AdmissionsController };
 //# sourceMappingURL=admissions.controller.js.map

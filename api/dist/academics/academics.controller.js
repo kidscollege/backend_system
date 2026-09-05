@@ -10,7 +10,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-import { Controller, Get, Post, Body, Param, Query, UseGuards, } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, } from '@nestjs/common';
 import { AcademicsService } from './academics.service.js';
 import { CreateSessionDto } from './dto/create-session.dto.js';
 import { CreateTermDto } from './dto/create-term.dto.js';
@@ -65,6 +65,24 @@ let AcademicsController = class AcademicsController {
     }
     getSections(classId) {
         return this.academicsService.getSectionsByClass(classId);
+    }
+    updateSession(id, dto) {
+        return this.academicsService.updateSession(id, dto);
+    }
+    deleteSession(id) {
+        return this.academicsService.deleteSession(id);
+    }
+    updateClass(id, dto) {
+        return this.academicsService.updateClass(id, dto);
+    }
+    deleteClass(id) {
+        return this.academicsService.deleteClass(id);
+    }
+    updateSubject(id, dto) {
+        return this.academicsService.updateSubject(id, dto);
+    }
+    deleteSubject(id) {
+        return this.academicsService.deleteSubject(id);
     }
 };
 __decorate([
@@ -160,6 +178,57 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], AcademicsController.prototype, "getSections", null);
+__decorate([
+    Patch('sessions/:id'),
+    Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.PRINCIPAL),
+    __param(0, Param('id')),
+    __param(1, Body()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, CreateSessionDto]),
+    __metadata("design:returntype", void 0)
+], AcademicsController.prototype, "updateSession", null);
+__decorate([
+    Delete('sessions/:id'),
+    Roles(Role.SUPER_ADMIN, Role.MANAGEMENT),
+    __param(0, Param('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], AcademicsController.prototype, "deleteSession", null);
+__decorate([
+    Patch('classes/:id'),
+    Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.PRINCIPAL),
+    __param(0, Param('id')),
+    __param(1, Body()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, CreateClassDto]),
+    __metadata("design:returntype", void 0)
+], AcademicsController.prototype, "updateClass", null);
+__decorate([
+    Delete('classes/:id'),
+    Roles(Role.SUPER_ADMIN, Role.MANAGEMENT),
+    __param(0, Param('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], AcademicsController.prototype, "deleteClass", null);
+__decorate([
+    Patch('subjects/:id'),
+    Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.PRINCIPAL),
+    __param(0, Param('id')),
+    __param(1, Body()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, CreateSubjectDto]),
+    __metadata("design:returntype", void 0)
+], AcademicsController.prototype, "updateSubject", null);
+__decorate([
+    Delete('subjects/:id'),
+    Roles(Role.SUPER_ADMIN, Role.MANAGEMENT),
+    __param(0, Param('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], AcademicsController.prototype, "deleteSubject", null);
 AcademicsController = __decorate([
     Controller('academics'),
     UseGuards(JwtAuthGuard, RolesGuard),

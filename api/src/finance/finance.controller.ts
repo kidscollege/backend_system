@@ -2,6 +2,8 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
+  Delete,
   Body,
   Param,
   Query,
@@ -63,4 +65,47 @@ export class FinanceController {
   getStudentBalance(@Param('studentId') studentId: string) {
     return this.financeService.getStudentBalances(studentId);
   }
+
+
+    @Patch('fee-structures/:id')
+  @Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.BURSAR)
+  updateFeeStructure(@Param('id') id: string, @Body() dto: CreateFeeStructureDto) {
+    return this.financeService.updateFeeStructure(id, dto);
+  }
+
+  @Delete('fee-structures/:id')
+  @Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.BURSAR)
+  deleteFeeStructure(@Param('id') id: string) {
+    return this.financeService.deleteFeeStructure(id);
+  }
+
+  @Get('reports/by-term')
+  @Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.BURSAR, Role.PRINCIPAL)
+  getFeesByTerm() {
+    return this.financeService.getFeesPaidByTerm();
+  }
+
+  @Get('reports/by-class')
+  @Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.BURSAR, Role.PRINCIPAL)
+  getFeesByClass() {
+    return this.financeService.getFeesPaidByClass();
+  }
+
+
+
+
+
+@Get('reports/summary')
+@Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.BURSAR, Role.PRINCIPAL)
+getPaymentsSummary(
+  @Query('termId') termId?: string,
+  @Query('classId') classId?: string,
+  @Query('sessionId') sessionId?: string,
+) {
+  return this.financeService.getFilteredPaymentsReport({
+    termId,
+    classId,
+    sessionId,
+  });
+}
 }
