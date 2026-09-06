@@ -20,8 +20,8 @@ export declare class AcademicsController {
     }>;
     getSessions(): Promise<({
         _count: {
-            classes: number;
             students: number;
+            classes: number;
         };
         terms: {
             id: string;
