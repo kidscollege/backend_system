@@ -243,6 +243,45 @@ export class AdmissionsService {
     return result;
   }
 
+
+  async trackApplication(applicationNo: string, phone?: string, email?: string) {
+  if (!applicationNo) {
+    throw new BadRequestException('Application number is required');
+  }
+
+  if (!phone && !email) {
+    throw new BadRequestException('Phone or email is required');
+  }
+
+  const application = await this.prisma.admissionApplication.findFirst({
+    where: {
+      applicationNo,
+      OR: [
+        ...(phone ? [{ parentPhone: phone }] : []),
+        ...(email ? [{ parentEmail: email }] : []),
+      ],
+    },
+    select: {
+      applicationNo: true,
+      firstName: true,
+      lastName: true,
+      middleName: true,
+      applyingClass: true,
+      status: true,
+      createdAt: true,
+      parentName: true,
+    },
+  });
+
+  if (!application) {
+    throw new NotFoundException('Application not found. Check your details.');
+  }
+
+  return application;
+}
+
+  
+
   async getStats() {
     const [total, submitted, underReview, approved, rejected, admitted] =
       await Promise.all([

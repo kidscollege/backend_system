@@ -66,4 +66,19 @@ export class AdmissionsController {
   getStats() {
     return this.admissionsService.getStats();
   }
+
+
+// Public endpoint - parents can track application status
+  @Get('track')
+  track(
+    @Query('applicationNo') applicationNo: string,
+    @Query('phone') phone?: string,
+    @Query('email') email?: string,
+  ) {
+    return this.admissionsService.trackApplication(
+      applicationNo,
+      phone,
+      email,
+    );
+  }
 }
