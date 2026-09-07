@@ -6,7 +6,9 @@ import {
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateApplicationDto } from './dto/create-application.dto.js';
 import { ReviewApplicationDto } from './dto/review-application.dto.js';
-import { ApplicationStatus, StudentStatus } from '@prisma/client';
+import { ApplicationStatus, Role, StudentStatus } from '@prisma/client';
+import { randomBytes } from 'node:crypto';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AdmissionsService {
@@ -69,6 +71,12 @@ export class AdmissionsService {
   ) {
     const application = await this.findOne(id);
 
+    if (dto.status === ApplicationStatus.ADMITTED) {
+      throw new BadRequestException(
+        'Use the admission action to convert an approved application into a student',
+      );
+    }
+
     if (
       application.status === ApplicationStatus.ADMITTED ||
       application.status === ApplicationStatus.REJECTED
@@ -103,6 +111,12 @@ export class AdmissionsService {
       throw new BadRequestException('Cannot admit a rejected application');
     }
 
+    if (application.status !== ApplicationStatus.APPROVED) {
+      throw new BadRequestException(
+        'Only approved applications can be admitted',
+      );
+    }
+
     // Generate admission number
     const year = new Date().getFullYear().toString().slice(-2);
     const count = await this.prisma.student.count();
@@ -124,20 +138,80 @@ export class AdmissionsService {
         },
       });
 
-      // Create Parent if available
+      let parentAccount: {
+        email: string;
+        temporaryPassword?: string;
+        created: boolean;
+      } | null = null;
+
+      // Create or link a parent identity when contact email is available.
       if (application.parentName) {
         const nameParts = application.parentName.trim().split(' ');
         const parentFirstName = nameParts[0] || 'Parent';
         const parentLastName = nameParts.slice(1).join(' ') || 'Guardian';
+        const parentEmail = application.parentEmail?.trim().toLowerCase();
+        let parentUserId: string | undefined;
 
-        const parent = await tx.parent.create({
-          data: {
-            firstName: parentFirstName,
-            lastName: parentLastName,
-            phone: application.parentPhone,
-            email: application.parentEmail,
-          },
-        });
+        if (parentEmail) {
+          const existingUser = await tx.user.findUnique({
+            where: { email: parentEmail },
+          });
+
+          if (existingUser && existingUser.role !== Role.PARENT) {
+            throw new BadRequestException(
+              'The parent email is already used by another account',
+            );
+          }
+
+          if (existingUser) {
+            parentUserId = existingUser.id;
+          } else {
+            const temporaryPassword = randomBytes(9).toString('base64url');
+            const passwordHash = await bcrypt.hash(temporaryPassword, 10);
+            const parentUser = await tx.user.create({
+              data: {
+                email: parentEmail,
+                passwordHash,
+                firstName: parentFirstName,
+                lastName: parentLastName,
+                phone: application.parentPhone,
+                role: Role.PARENT,
+              },
+            });
+            parentUserId = parentUser.id;
+            parentAccount = {
+              email: parentEmail,
+              temporaryPassword,
+              created: true,
+            };
+          }
+        }
+
+        const existingParent = parentEmail
+          ? await tx.parent.findFirst({ where: { email: parentEmail } })
+          : null;
+
+        const parent = existingParent
+          ? await tx.parent.update({
+              where: { id: existingParent.id },
+              data: { userId: existingParent.userId ?? parentUserId },
+            })
+          : await tx.parent.create({
+              data: {
+                userId: parentUserId,
+                firstName: parentFirstName,
+                lastName: parentLastName,
+                phone: application.parentPhone,
+                email: parentEmail,
+              },
+            });
+
+        if (!parentAccount && parentUserId) {
+          parentAccount = {
+            email: parentEmail!,
+            created: false,
+          };
+        }
 
         await tx.studentGuardian.create({
           data: {
@@ -163,7 +237,7 @@ export class AdmissionsService {
         },
       });
 
-      return updatedApplication;
+      return { application: updatedApplication, parentAccount };
     });
 
     return result;
