@@ -19,9 +19,14 @@ async function bootstrap() {
 
   // Enable CORS for the frontend
   app.enableCors({
-    origin: [process.env.FRONTEND_URL || 'http://localhost:3000', 'https://kcbn.vercel.app'],
-    credentials: true,
-  });
+  origin: [
+    'http://localhost:3000',
+    'https://kcbn.vercel.app',
+  ],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+});
 
   // Global API prefix
   app.setGlobalPrefix('api');
