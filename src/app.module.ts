@@ -7,6 +7,7 @@ import { AcademicsModule } from './academics/academics.module.js';
 import { FinanceModule } from './finance/finance.module.js';
 import { ResultsModule } from './results/results.module.js';
 import { AttendanceModule } from './attendance/attendance.module.js';
+import { TeacherModule } from './teacher/teacher.module.js';
 import { HrModule } from './hr/hr.module.js';
 import { AdmissionsModule } from './admissions/admissions.module.js';
 import { ProcurementModule } from './procurement/procurement.module.js';
@@ -30,6 +31,7 @@ import { AppService } from './app.service.js';
     AttendanceModule,   
     HrModule,   
     AdmissionsModule, 
+    TeacherModule,
     ProcurementModule,
     ParentModule,
     DashboardModule,
