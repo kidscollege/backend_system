@@ -10,6 +10,7 @@ import { AttendanceModule } from './attendance/attendance.module.js';
 import { HrModule } from './hr/hr.module.js';
 import { AdmissionsModule } from './admissions/admissions.module.js';
 import { ProcurementModule } from './procurement/procurement.module.js';
+import { ParentModule } from './parent/parent.module.js';
 import { DashboardModule } from './dashboard/dashboard.module.js';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
@@ -30,6 +31,7 @@ import { AppService } from './app.service.js';
     HrModule,   
     AdmissionsModule, 
     ProcurementModule,
+    ParentModule,
     DashboardModule,
   ],
   controllers: [AppController],
