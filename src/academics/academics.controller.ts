@@ -43,17 +43,21 @@ export class AcademicsController {
     return this.academicsService.getCurrentSession();
   }
 
-  // ===== TERMS =====
+   // ===== TERMS =====
   @Post('terms')
   @Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.PRINCIPAL)
   createTerm(@Body() dto: CreateTermDto) {
     return this.academicsService.createTerm(dto);
   }
 
-  
+  @Get('terms')
+  @Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.PRINCIPAL, Role.TEACHER)
+  getAllTerms(@Query('sessionId') sessionId?: string) {
+    return this.academicsService.getTerms(sessionId);
+  }
 
   @Get('sessions/:sessionId/terms')
-  getTerms(@Param('sessionId') sessionId: string) {
+  getTermsBySession(@Param('sessionId') sessionId: string) {
     return this.academicsService.getTermsBySession(sessionId);
   }
 

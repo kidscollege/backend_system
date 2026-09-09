@@ -100,6 +100,9 @@ async getTerms(sessionId?: string) {
 }
 
 
+
+
+
   
   async getTermsBySession(sessionId: string) {
     return this.prisma.term.findMany({
