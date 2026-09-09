@@ -108,6 +108,56 @@ export class TeacherService {
     orderBy: { startDate: 'desc' },
   });
 }
+
+
+async getAttendanceByDate(
+  userId: string,
+  classId: string,
+  date: string,
+  sectionId?: string,
+) {
+  const staff = await this.getStaffProfile(userId);
+
+  const assigned = await this.prisma.classSubject.findFirst({
+    where: {
+      teacherId: staff.id,
+      classId,
+      ...(sectionId ? { sectionId } : {}),
+    },
+  });
+
+  if (!assigned) {
+    throw new ForbiddenException('You are not assigned to this class');
+  }
+
+  const students = await this.prisma.student.findMany({
+    where: {
+      currentClassId: classId,
+      ...(sectionId ? { currentSectionId: sectionId } : {}),
+      status: 'ACTIVE',
+    },
+    orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
+  });
+
+  const records = await this.prisma.attendanceRecord.findMany({
+    where: {
+      date: new Date(date),
+      studentId: { in: students.map((s) => s.id) },
+    },
+  });
+
+  const map = new Map(records.map((r) => [r.studentId, r]));
+
+  return students.map((s) => ({
+    studentId: s.id,
+    admissionNumber: s.admissionNumber,
+    firstName: s.firstName,
+    lastName: s.lastName,
+    status: map.get(s.id)?.status || null,
+    remark: map.get(s.id)?.remark || null,
+    recordId: map.get(s.id)?.id || null,
+  }));
+}
   async markAttendance(
     userId: string,
     data: {

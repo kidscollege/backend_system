@@ -48,4 +48,19 @@ export class TeacherController {
   markAttendance(@CurrentUser() user: any, @Body() body: any) {
     return this.teacherService.markAttendance(user.id, body);
   }
+
+  @Get('attendance')
+getAttendanceByDate(
+  @CurrentUser() user: any,
+  @Query('classId') classId: string,
+  @Query('date') date: string,
+  @Query('sectionId') sectionId?: string,
+) {
+  return this.teacherService.getAttendanceByDate(
+    user.id,
+    classId,
+    date,
+    sectionId,
+  );
+}
 }
