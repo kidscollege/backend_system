@@ -2,6 +2,8 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
+  Delete,
   Body,
   Param,
   Query,
@@ -9,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { ResultsService } from './results.service.js';
 import { CreateAssessmentDto } from './dto/create-assessment.dto.js';
+import { UpdateAssessmentDto } from './dto/update-assessment.dto.js';
 import { RecordScoreDto } from './dto/record-score.dto.js';
 import { BulkRecordScoresDto } from './dto/bulk-record-scores.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
@@ -39,6 +42,21 @@ export class ResultsController {
   @Get('assessments/:id')
   getAssessment(@Param('id') id: string) {
     return this.resultsService.getAssessment(id);
+  }
+
+  @Patch('assessments/:id')
+  @Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.PRINCIPAL, Role.TEACHER)
+  updateAssessment(
+    @Param('id') id: string,
+    @Body() dto: UpdateAssessmentDto,
+  ) {
+    return this.resultsService.updateAssessment(id, dto);
+  }
+
+  @Delete('assessments/:id')
+  @Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.PRINCIPAL, Role.TEACHER)
+  deleteAssessment(@Param('id') id: string) {
+    return this.resultsService.deleteAssessment(id);
   }
 
   // Scores

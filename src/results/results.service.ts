@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateAssessmentDto } from './dto/create-assessment.dto.js';
+import { UpdateAssessmentDto } from './dto/update-assessment.dto.js';
 import { RecordScoreDto } from './dto/record-score.dto.js';
 import { BulkRecordScoresDto } from './dto/bulk-record-scores.dto.js';
 
@@ -86,6 +87,70 @@ export class ResultsService {
     }
 
     return assessment;
+  }
+
+  async updateAssessment(id: string, dto: UpdateAssessmentDto) {
+    const assessment = await this.prisma.assessment.findUnique({
+      where: { id },
+    });
+
+    if (!assessment) {
+      throw new NotFoundException('Assessment not found');
+    }
+
+    if (dto.termId) {
+      const term = await this.prisma.term.findUnique({
+        where: { id: dto.termId },
+      });
+      if (!term) throw new NotFoundException('Term not found');
+    }
+
+    if (dto.subjectId) {
+      const subject = await this.prisma.subject.findUnique({
+        where: { id: dto.subjectId },
+      });
+      if (!subject) throw new NotFoundException('Subject not found');
+    }
+
+    if (dto.maxScore !== undefined && dto.maxScore < 1) {
+      throw new BadRequestException('Max score must be at least 1');
+    }
+
+    return this.prisma.assessment.update({
+      where: { id },
+      data: {
+        termId: dto.termId,
+        subjectId: dto.subjectId,
+        name: dto.name,
+        maxScore: dto.maxScore,
+        weight: dto.weight,
+        assessmentDate: dto.assessmentDate
+          ? new Date(dto.assessmentDate)
+          : undefined,
+      },
+      include: {
+        term: true,
+        subject: true,
+      },
+    });
+  }
+
+  async deleteAssessment(id: string) {
+    const assessment = await this.prisma.assessment.findUnique({
+      where: { id },
+    });
+
+    if (!assessment) {
+      throw new NotFoundException('Assessment not found');
+    }
+
+    await this.prisma.studentAssessment.deleteMany({
+      where: { assessmentId: id },
+    });
+
+    return this.prisma.assessment.delete({
+      where: { id },
+    });
   }
 
   // ======================
