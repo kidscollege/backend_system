@@ -109,6 +109,179 @@ export class TeacherService {
   });
 }
 
+async getAssessments(
+  userId: string,
+  subjectId: string,
+  termId: string,
+) {
+  const staff = await this.getStaffProfile(userId);
+
+  const assigned = await this.prisma.classSubject.findFirst({
+    where: {
+      teacherId: staff.id,
+      subjectId,
+    },
+  });
+
+  if (!assigned) {
+    throw new ForbiddenException('You are not assigned to this subject');
+  }
+
+  return this.prisma.assessment.findMany({
+    where: { subjectId, termId },
+    orderBy: { createdAt: 'desc' },
+  });
+}
+
+async createAssessment(
+  userId: string,
+  data: {
+    subjectId: string;
+    termId: string;
+    name: string;
+    maxScore: number;
+    weight?: number;
+    assessmentDate?: string;
+  },
+) {
+  const staff = await this.getStaffProfile(userId);
+
+  const assigned = await this.prisma.classSubject.findFirst({
+    where: {
+      teacherId: staff.id,
+      subjectId: data.subjectId,
+    },
+  });
+
+  if (!assigned) {
+    throw new ForbiddenException('You are not assigned to this subject');
+  }
+
+  return this.prisma.assessment.create({
+    data: {
+      subjectId: data.subjectId,
+      termId: data.termId,
+      name: data.name,
+      maxScore: Number(data.maxScore),
+      weight: data.weight != null ? Number(data.weight) : null,
+      assessmentDate: data.assessmentDate
+        ? new Date(data.assessmentDate)
+        : null,
+    },
+  });
+}
+
+async getAssessmentScores(
+  userId: string,
+  assessmentId: string,
+  classId: string,
+  sectionId?: string,
+) {
+  const staff = await this.getStaffProfile(userId);
+
+  const assessment = await this.prisma.assessment.findUnique({
+    where: { id: assessmentId },
+  });
+  if (!assessment) throw new NotFoundException('Assessment not found');
+
+  const assigned = await this.prisma.classSubject.findFirst({
+    where: {
+      teacherId: staff.id,
+      classId,
+      subjectId: assessment.subjectId,
+    },
+  });
+  if (!assigned) {
+    throw new ForbiddenException('You are not assigned to this class/subject');
+  }
+
+  const students = await this.prisma.student.findMany({
+    where: {
+      currentClassId: classId,
+      ...(sectionId ? { currentSectionId: sectionId } : {}),
+      status: 'ACTIVE',
+    },
+    orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
+  });
+
+  const scores = await this.prisma.studentAssessment.findMany({
+    where: {
+      assessmentId,
+      studentId: { in: students.map((s) => s.id) },
+    },
+  });
+
+  const map = new Map(scores.map((s) => [s.studentId, s]));
+
+  return {
+    assessment,
+    rows: students.map((s) => ({
+      studentId: s.id,
+      admissionNumber: s.admissionNumber,
+      firstName: s.firstName,
+      lastName: s.lastName,
+      score: map.get(s.id)?.score ?? null,
+      remark: map.get(s.id)?.remark ?? null,
+    })),
+  };
+}
+
+async saveAssessmentScores(
+  userId: string,
+  data: {
+    assessmentId: string;
+    classId: string;
+    sectionId?: string;
+    scores: { studentId: string; score?: number | null; remark?: string }[];
+  },
+) {
+  const staff = await this.getStaffProfile(userId);
+
+  const assessment = await this.prisma.assessment.findUnique({
+    where: { id: data.assessmentId },
+  });
+  if (!assessment) throw new NotFoundException('Assessment not found');
+
+  const assigned = await this.prisma.classSubject.findFirst({
+    where: {
+      teacherId: staff.id,
+      classId: data.classId,
+      subjectId: assessment.subjectId,
+    },
+  });
+  if (!assigned) {
+    throw new ForbiddenException('You are not assigned to this class/subject');
+  }
+
+  const ops = data.scores.map((row) =>
+    this.prisma.studentAssessment.upsert({
+      where: {
+        studentId_assessmentId: {
+          studentId: row.studentId,
+          assessmentId: data.assessmentId,
+        },
+      },
+      update: {
+        score: row.score == null || row.score === ('' as any)
+          ? null
+          : Number(row.score),
+        remark: row.remark || null,
+      },
+      create: {
+        studentId: row.studentId,
+        assessmentId: data.assessmentId,
+        score: row.score == null || row.score === ('' as any)
+          ? null
+          : Number(row.score),
+        remark: row.remark || null,
+      },
+    }),
+  );
+
+  await this.prisma.$transaction(ops);
+
+  return { message: 'Scores saved successfully', count: data.scores.length };
+}
 
 async getAttendanceByDate(
   userId: string,

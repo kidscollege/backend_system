@@ -63,4 +63,47 @@ getAttendanceByDate(
     sectionId,
   );
 }
+
+@Get('assessments')
+getAssessments(
+  @CurrentUser() user: any,
+  @Query('subjectId') subjectId: string,
+  @Query('termId') termId: string,
+) {
+  return this.teacherService.getAssessments(user.id, subjectId, termId);
+}
+
+@Post('assessments')
+createAssessment(@CurrentUser() user: any, @Body() body: any) {
+  return this.teacherService.createAssessment(user.id, body);
+}
+
+@Get('assessments/:assessmentId/scores')
+getAssessmentScores(
+  @CurrentUser() user: any,
+  @Param('assessmentId') assessmentId: string,
+  @Query('classId') classId: string,
+  @Query('sectionId') sectionId?: string,
+) {
+  return this.teacherService.getAssessmentScores(
+    user.id,
+    assessmentId,
+    classId,
+    sectionId,
+  );
+}
+
+@Post('assessments/:assessmentId/scores')
+saveAssessmentScores(
+  @CurrentUser() user: any,
+  @Param('assessmentId') assessmentId: string,
+  @Body() body: any,
+) {
+  return this.teacherService.saveAssessmentScores(user.id, {
+    assessmentId,
+    classId: body.classId,
+    sectionId: body.sectionId,
+    scores: body.scores || [],
+  });
+}
 }
