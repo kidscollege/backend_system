@@ -102,7 +102,12 @@ export class TeacherService {
       },
     });
   }
-
+  
+  async getTerms() {
+  return this.prisma.term.findMany({
+    orderBy: { startDate: 'desc' },
+  });
+}
   async markAttendance(
     userId: string,
     data: {

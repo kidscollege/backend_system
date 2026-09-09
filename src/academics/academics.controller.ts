@@ -50,6 +50,8 @@ export class AcademicsController {
     return this.academicsService.createTerm(dto);
   }
 
+  
+
   @Get('sessions/:sessionId/terms')
   getTerms(@Param('sessionId') sessionId: string) {
     return this.academicsService.getTermsBySession(sessionId);

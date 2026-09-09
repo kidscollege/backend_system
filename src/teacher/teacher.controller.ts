@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { TeacherService } from './teacher.service.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
@@ -20,6 +28,11 @@ export class TeacherController {
   @Get('assignments')
   getAssignments(@CurrentUser() user: any) {
     return this.teacherService.getAssignments(user.id);
+  }
+
+  @Get('terms')
+  getTerms() {
+    return this.teacherService.getTerms();
   }
 
   @Get('classes/:classId/students')

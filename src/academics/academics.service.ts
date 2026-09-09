@@ -72,33 +72,35 @@ export class AcademicsService {
   // TERM
   // ======================
 
-  async createTerm(dto: CreateTermDto) {
-    const session = await this.prisma.academicSession.findUnique({
-      where: { id: dto.sessionId },
-    });
+ // create term
+async createTerm(data: {
+  sessionId: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  isCurrent?: boolean;
+}) {
+  return this.prisma.term.create({
+    data: {
+      sessionId: data.sessionId,
+      name: data.name,
+      startDate: new Date(data.startDate),
+      endDate: new Date(data.endDate),
+      isCurrent: data.isCurrent || false,
+    },
+  });
+}
 
-    if (!session) {
-      throw new NotFoundException('Academic session not found');
-    }
+async getTerms(sessionId?: string) {
+  return this.prisma.term.findMany({
+    where: sessionId ? { sessionId } : undefined,
+    include: { session: true },
+    orderBy: { startDate: 'desc' },
+  });
+}
 
-    if (dto.isCurrent) {
-      await this.prisma.term.updateMany({
-        where: { sessionId: dto.sessionId, isCurrent: true },
-        data: { isCurrent: false },
-      });
-    }
 
-    return this.prisma.term.create({
-      data: {
-        sessionId: dto.sessionId,
-        name: dto.name,
-        startDate: new Date(dto.startDate),
-        endDate: new Date(dto.endDate),
-        isCurrent: dto.isCurrent ?? false,
-      },
-    });
-  }
-
+  
   async getTermsBySession(sessionId: string) {
     return this.prisma.term.findMany({
       where: { sessionId },
