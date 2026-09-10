@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { StudentsModule } from './students/students.module.js';
+import { StaffModule } from './staff/staff.module.js';
 import { AcademicsModule } from './academics/academics.module.js';
 import { FinanceModule } from './finance/finance.module.js';
 import { ResultsModule } from './results/results.module.js';
@@ -32,6 +33,7 @@ import { AppService } from './app.service.js';
     HrModule,   
     AdmissionsModule, 
     TeacherModule,
+    StaffModule,
     ProcurementModule,
     ParentModule,
     DashboardModule,
