@@ -5,8 +5,10 @@ import {
   IsEmail,
   IsDateString,
   IsEnum,
+  IsBoolean,
+  ValidateIf,
 } from 'class-validator';
-import { EmploymentStatus } from '@prisma/client';
+import { EmploymentStatus, Role } from '@prisma/client';
 
 export class CreateStaffDto {
   @IsString()
@@ -34,8 +36,17 @@ export class CreateStaffDto {
   phone?: string;
 
   @IsOptional()
+  @ValidateIf((dto: CreateStaffDto) => dto.createLogin === true)
   @IsEmail()
   email?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  createLogin?: boolean;
+
+  @IsOptional()
+  @IsEnum(Role)
+  role?: Role;
 
   @IsOptional()
   @IsString()

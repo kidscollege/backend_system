@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { HrService } from './hr.service.js';
 import { CreateStaffDto } from './dto/create-staff.dto.js';
+
 import { UpdateStaffDto } from './dto/update-staff.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
@@ -27,6 +28,8 @@ export class HrController {
   create(@Body() dto: CreateStaffDto) {
     return this.hrService.create(dto);
   }
+
+  
 
   @Get('staff')
   @Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.HR_ADMIN, Role.PRINCIPAL)
