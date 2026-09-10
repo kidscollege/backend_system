@@ -61,6 +61,18 @@ export class AcademicsController {
     return this.academicsService.getTermsBySession(sessionId);
   }
 
+  @Get('class-subjects')
+@Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.PRINCIPAL, Role.HR_ADMIN)
+getClassSubjects(@Query('classId') classId?: string) {
+  return this.academicsService.getClassSubjects(classId);
+}
+
+@Post('class-subjects')
+@Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.PRINCIPAL, Role.HR_ADMIN)
+assignTeacher(@Body() body: any) {
+  return this.academicsService.assignTeacher(body);
+}
+
   // ===== DEPARTMENTS =====
   @Post('departments')
   @Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.PRINCIPAL)

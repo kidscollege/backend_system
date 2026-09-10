@@ -68,6 +68,76 @@ export class AcademicsService {
     return session;
   }
 
+
+  async assignTeacher(data: {
+  classId: string;
+  subjectId: string;
+  teacherId: string; // Staff.id
+  sectionId?: string;
+}) {
+  if (!data.classId || !data.subjectId || !data.teacherId) {
+    throw new BadRequestException('classId, subjectId and teacherId are required');
+  }
+
+  const [classExists, subjectExists, teacherExists] = await Promise.all([
+    this.prisma.class.findUnique({ where: { id: data.classId } }),
+    this.prisma.subject.findUnique({ where: { id: data.subjectId } }),
+    this.prisma.staff.findUnique({ where: { id: data.teacherId } }),
+  ]);
+
+  if (!classExists) throw new NotFoundException('Class not found');
+  if (!subjectExists) throw new NotFoundException('Subject not found');
+  if (!teacherExists) throw new NotFoundException('Teacher/staff not found');
+
+  const existing = await this.prisma.classSubject.findFirst({
+    where: {
+      classId: data.classId,
+      subjectId: data.subjectId,
+      sectionId: data.sectionId || null,
+    },
+  });
+
+  if (existing) {
+    return this.prisma.classSubject.update({
+      where: { id: existing.id },
+      data: { teacherId: data.teacherId },
+      include: {
+        class: true,
+        subject: true,
+        teacher: true,
+        section: true,
+      },
+    });
+  }
+
+  return this.prisma.classSubject.create({
+    data: {
+      classId: data.classId,
+      subjectId: data.subjectId,
+      teacherId: data.teacherId,
+      sectionId: data.sectionId || null,
+    },
+    include: {
+      class: true,
+      subject: true,
+      teacher: true,
+      section: true,
+    },
+  });
+}
+
+async getClassSubjects(classId?: string) {
+  return this.prisma.classSubject.findMany({
+    where: classId ? { classId } : undefined,
+    include: {
+      class: true,
+      subject: true,
+      teacher: true,
+      section: true,
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+}
   // ======================
   // TERM
   // ======================
