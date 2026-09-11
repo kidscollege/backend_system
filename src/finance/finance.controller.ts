@@ -38,12 +38,14 @@ export class FinanceController {
   // Invoices
   @Post('invoices')
   @Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.BURSAR)
+
+  
   createInvoice(@Body() dto: CreateInvoiceDto) {
     return this.financeService.createInvoice(dto);
   }
 
   @Get('invoices')
-  @Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.BURSAR, Role.PRINCIPAL)
+@Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.BURSAR, Role.PRINCIPAL)
   getInvoices(@Query('studentId') studentId?: string) {
     return this.financeService.getInvoices(studentId);
   }
@@ -59,6 +61,9 @@ export class FinanceController {
   recordPayment(@Body() dto: RecordPaymentDto) {
     return this.financeService.recordPayment(dto);
   }
+
+  @Get('payments')
+@Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.BURSAR)
 
   // Student Balance
   @Get('students/:studentId/balance')
