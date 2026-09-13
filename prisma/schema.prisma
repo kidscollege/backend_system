@@ -120,6 +120,7 @@ model AcademicSession {
   terms    Term[]
   classes  Class[]
   students Student[]
+  timetables TimetableEntry[]
 
   @@unique([schoolId, name])
 }
@@ -137,6 +138,7 @@ model Term {
   session           AcademicSession    @relation(fields: [sessionId], references: [id])
   assessments       Assessment[]
   attendanceRecords AttendanceRecord[]
+  timetables        TimetableEntry[]
 }
 
 model Department {
@@ -165,6 +167,7 @@ model Subject {
   department    Department?    @relation(fields: [departmentId], references: [id])
   classSubjects ClassSubject[]
   assessments   Assessment[]
+  timetables    TimetableEntry[]
 }
 
 model Class {
@@ -182,6 +185,7 @@ model Class {
   sections      ClassSection[]
   students      Student[]
   classSubjects ClassSubject[]
+  timetables    TimetableEntry[]
 }
 
 model ClassSection {
@@ -194,6 +198,7 @@ model ClassSection {
   class         Class          @relation(fields: [classId], references: [id])
   students      Student[]
   classSubjects ClassSubject[]
+  timetables    TimetableEntry[]
 }
 
 model ClassSubject {
@@ -209,6 +214,37 @@ model ClassSubject {
   section ClassSection? @relation(fields: [sectionId], references: [id])
   subject Subject       @relation(fields: [subjectId], references: [id])
   teacher Staff?        @relation(fields: [teacherId], references: [id])
+}
+
+model TimetableEntry {
+  id         String   @id @default(cuid())
+  sessionId  String
+  termId     String?
+  classId    String
+  sectionId  String?
+  subjectId  String
+  teacherId  String
+  dayOfWeek  Int
+  startTime  String
+  endTime    String
+  room       String?
+  isActive   Boolean  @default(true)
+  isPublished Boolean @default(false)
+  publishedAt DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  session AcademicSession @relation(fields: [sessionId], references: [id])
+  term    Term?           @relation(fields: [termId], references: [id])
+  class   Class           @relation(fields: [classId], references: [id])
+  section ClassSection?   @relation(fields: [sectionId], references: [id])
+  subject Subject         @relation(fields: [subjectId], references: [id])
+  teacher Staff           @relation(fields: [teacherId], references: [id])
+
+  @@index([sessionId, dayOfWeek])
+  @@index([classId, dayOfWeek])
+  @@index([teacherId, dayOfWeek])
+  @@index([room, dayOfWeek])
 }
 
 // ======================
@@ -534,6 +570,7 @@ model Staff {
   user          User?          @relation(fields: [userId], references: [id])
   department    Department?    @relation(fields: [departmentId], references: [id])
   classSubjects ClassSubject[]
+  timetables    TimetableEntry[]
 }
 
 // ======================

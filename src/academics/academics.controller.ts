@@ -16,6 +16,7 @@ import { CreateDepartmentDto } from './dto/create-department.dto.js';
 import { CreateSubjectDto } from './dto/create-subject.dto.js';
 import { CreateClassDto } from './dto/create-class.dto.js';
 import { CreateSectionDto } from './dto/create-section.dto.js';
+import { CreateTimetableEntryDto } from './dto/create-timetable-entry.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { Roles } from '../auth/decorators/roles.decorator.js';
@@ -25,6 +26,44 @@ import { Role } from '@prisma/client';
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class AcademicsController {
   constructor(private readonly academicsService: AcademicsService) {}
+
+  @Get('timetable')
+  @Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.PRINCIPAL, Role.TEACHER)
+  getTimetable(
+    @Query('sessionId') sessionId?: string,
+    @Query('termId') termId?: string,
+    @Query('classId') classId?: string,
+    @Query('teacherId') teacherId?: string,
+  ) {
+    return this.academicsService.getTimetable({ sessionId, termId, classId, teacherId });
+  }
+
+  @Post('timetable')
+  @Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.PRINCIPAL)
+  createTimetableEntry(@Body() dto: CreateTimetableEntryDto) {
+    return this.academicsService.createTimetableEntry(dto);
+  }
+
+  @Patch('timetable/:id')
+  @Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.PRINCIPAL)
+  updateTimetableEntry(@Param('id') id: string, @Body() dto: CreateTimetableEntryDto) {
+    return this.academicsService.updateTimetableEntry(id, dto);
+  }
+
+  @Delete('timetable/:id')
+  @Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.PRINCIPAL)
+  deleteTimetableEntry(@Param('id') id: string) {
+    return this.academicsService.deleteTimetableEntry(id);
+  }
+
+  @Patch('timetable/:id/publish')
+  @Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.PRINCIPAL)
+  setTimetablePublished(
+    @Param('id') id: string,
+    @Body('isPublished') isPublished: boolean,
+  ) {
+    return this.academicsService.setTimetablePublished(id, isPublished);
+  }
 
   // ===== SESSIONS =====
   @Post('sessions')

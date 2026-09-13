@@ -10,10 +10,108 @@ import { CreateDepartmentDto } from './dto/create-department.dto.js';
 import { CreateSubjectDto } from './dto/create-subject.dto.js';
 import { CreateClassDto } from './dto/create-class.dto.js';
 import { CreateSectionDto } from './dto/create-section.dto.js';
+import { CreateTimetableEntryDto } from './dto/create-timetable-entry.dto.js';
 
 @Injectable()
 export class AcademicsService {
   constructor(private prisma: PrismaService) {}
+
+  private timeToMinutes(value: string) {
+    const [hours, minutes] = value.split(':').map(Number);
+    return hours * 60 + minutes;
+  }
+
+  private async validateTimetableEntry(dto: CreateTimetableEntryDto, excludeId?: string) {
+    if (this.timeToMinutes(dto.endTime) <= this.timeToMinutes(dto.startTime)) {
+      throw new BadRequestException('End time must be after start time');
+    }
+
+    const [session, term, classRecord, subject, teacher, section] = await Promise.all([
+      this.prisma.academicSession.findUnique({ where: { id: dto.sessionId } }),
+      dto.termId ? this.prisma.term.findUnique({ where: { id: dto.termId } }) : null,
+      this.prisma.class.findUnique({ where: { id: dto.classId } }),
+      this.prisma.subject.findUnique({ where: { id: dto.subjectId } }),
+      this.prisma.staff.findUnique({ where: { id: dto.teacherId } }),
+      dto.sectionId ? this.prisma.classSection.findUnique({ where: { id: dto.sectionId } }) : null,
+    ]);
+
+    if (!session) throw new NotFoundException('Academic session not found');
+    if (dto.termId && (!term || term.sessionId !== dto.sessionId)) throw new BadRequestException('Term does not belong to the selected session');
+    if (!classRecord || classRecord.sessionId !== dto.sessionId) throw new BadRequestException('Class does not belong to the selected session');
+    if (!subject) throw new NotFoundException('Subject not found');
+    if (!teacher) throw new NotFoundException('Teacher not found');
+    if (dto.sectionId && (!section || section.classId !== dto.classId)) throw new BadRequestException('Section does not belong to the selected class');
+
+    const entries = await this.prisma.timetableEntry.findMany({
+      where: {
+        sessionId: dto.sessionId,
+        dayOfWeek: dto.dayOfWeek,
+        ...(excludeId ? { id: { not: excludeId } } : {}),
+      },
+    });
+    const start = this.timeToMinutes(dto.startTime);
+    const end = this.timeToMinutes(dto.endTime);
+    const overlaps = (entry: (typeof entries)[number]) => start < this.timeToMinutes(entry.endTime) && end > this.timeToMinutes(entry.startTime);
+    const classClash = entries.some((entry) => entry.classId === dto.classId && (!dto.sectionId || !entry.sectionId || entry.sectionId === dto.sectionId) && overlaps(entry));
+    const teacherClash = entries.some((entry) => entry.teacherId === dto.teacherId && overlaps(entry));
+    const roomClash = dto.room?.trim() && entries.some((entry) => entry.room?.toLowerCase() === dto.room?.trim().toLowerCase() && overlaps(entry));
+    if (classClash) throw new BadRequestException('This class already has a timetable entry during that period');
+    if (teacherClash) throw new BadRequestException('This teacher is already scheduled during that period');
+    if (roomClash) throw new BadRequestException('This room is already booked during that period');
+  }
+
+  async getTimetable(filters: { sessionId?: string; termId?: string; classId?: string; teacherId?: string }) {
+    return this.prisma.timetableEntry.findMany({
+      where: {
+        isActive: true,
+        ...(filters.teacherId ? { isPublished: true } : {}),
+        ...(filters.sessionId ? { sessionId: filters.sessionId } : {}),
+        ...(filters.termId ? { termId: filters.termId } : {}),
+        ...(filters.classId ? { classId: filters.classId } : {}),
+        ...(filters.teacherId ? { teacherId: filters.teacherId } : {}),
+      },
+      include: { session: true, term: true, class: true, section: true, subject: true, teacher: true },
+      orderBy: [{ dayOfWeek: 'asc' }, { startTime: 'asc' }],
+    });
+  }
+
+  async createTimetableEntry(dto: CreateTimetableEntryDto) {
+    await this.validateTimetableEntry(dto);
+    return this.prisma.timetableEntry.create({
+      data: dto,
+      include: { session: true, term: true, class: true, section: true, subject: true, teacher: true },
+    });
+  }
+
+  async updateTimetableEntry(id: string, dto: CreateTimetableEntryDto) {
+    const existing = await this.prisma.timetableEntry.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('Timetable entry not found');
+    await this.validateTimetableEntry(dto, id);
+    return this.prisma.timetableEntry.update({
+      where: { id },
+      data: dto,
+      include: { session: true, term: true, class: true, section: true, subject: true, teacher: true },
+    });
+  }
+
+  async deleteTimetableEntry(id: string) {
+    const existing = await this.prisma.timetableEntry.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('Timetable entry not found');
+    return this.prisma.timetableEntry.update({ where: { id }, data: { isActive: false } });
+  }
+
+  async setTimetablePublished(id: string, isPublished: boolean) {
+    const existing = await this.prisma.timetableEntry.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('Timetable entry not found');
+
+    return this.prisma.timetableEntry.update({
+      where: { id },
+      data: {
+        isPublished,
+        publishedAt: isPublished ? new Date() : null,
+      },
+    });
+  }
 
   // ======================
   // ACADEMIC SESSION

@@ -69,6 +69,15 @@ export class TeacherService {
     });
   }
 
+  async getTimetable(userId: string) {
+    const staff = await this.getStaffProfile(userId);
+    return this.prisma.timetableEntry.findMany({
+      where: { teacherId: staff.id, isActive: true, isPublished: true },
+      include: { session: true, term: true, class: true, section: true, subject: true },
+      orderBy: [{ dayOfWeek: 'asc' }, { startTime: 'asc' }],
+    });
+  }
+
   async getClassStudents(userId: string, classId: string, sectionId?: string) {
     const staff = await this.getStaffProfile(userId);
 

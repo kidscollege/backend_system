@@ -30,6 +30,11 @@ export class TeacherController {
     return this.teacherService.getAssignments(user.id);
   }
 
+  @Get('timetable')
+  getTimetable(@CurrentUser() user: any) {
+    return this.teacherService.getTimetable(user.id);
+  }
+
   @Get('terms')
   getTerms() {
     return this.teacherService.getTerms();
