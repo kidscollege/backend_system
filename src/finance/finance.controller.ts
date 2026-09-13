@@ -16,6 +16,7 @@ import { RecordPaymentDto } from './dto/record-payment.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { Roles } from '../auth/decorators/roles.decorator.js';
+import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
 import { Role } from '@prisma/client';
 
 @Controller('finance')
@@ -58,8 +59,8 @@ export class FinanceController {
   // Payments
   @Post('payments')
   @Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.BURSAR)
-  recordPayment(@Body() dto: RecordPaymentDto) {
-    return this.financeService.recordPayment(dto);
+  recordPayment(@Body() dto: RecordPaymentDto, @CurrentUser() user: any) {
+    return this.financeService.recordPayment(dto, user);
   }
 
   @Get('payments')

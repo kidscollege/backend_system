@@ -155,7 +155,7 @@ export class FinanceService {
   // PAYMENT
   // ======================
 
-  async recordPayment(dto: RecordPaymentDto) {
+  async recordPayment(dto: RecordPaymentDto, currentUser?: any) {
     const invoice = await this.prisma.feeInvoice.findUnique({
       where: { id: dto.invoiceId },
     });
@@ -220,7 +220,7 @@ export class FinanceService {
 
       await tx.auditLog.create({
         data: {
-          userId: dto.recordedById || null,
+          userId: currentUser?.id || null,
           action: 'FEE_PAYMENT',
           entity: 'Payment',
           entityId: payment.id,

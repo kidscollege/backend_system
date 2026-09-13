@@ -319,13 +319,17 @@ export class ResultsService {
   // STUDENT RESULTS
   // ======================
 
-  async getStudentResults(studentId: string, termId?: string) {
+  async getStudentResults(studentId: string, termId?: string, currentUser?: any) {
     const student = await this.prisma.student.findUnique({
       where: { id: studentId },
     });
 
     if (!student) {
       throw new NotFoundException('Student not found');
+    }
+
+    if (currentUser?.role === 'TEACHER') {
+      await this.assertTeacherCanAccessSubject(currentUser, undefined, student.currentClassId ?? undefined);
     }
 
     const scores = await this.prisma.studentAssessment.findMany({
@@ -361,7 +365,7 @@ export class ResultsService {
     };
   }
 
-  async getClassResults(classId: string, assessmentId: string) {
+  async getClassResults(classId: string, assessmentId: string, currentUser?: any) {
     const assessment = await this.prisma.assessment.findUnique({
       where: { id: assessmentId },
       include: { subject: true, term: true },
@@ -369,6 +373,10 @@ export class ResultsService {
 
     if (!assessment) {
       throw new NotFoundException('Assessment not found');
+    }
+
+    if (currentUser?.role === 'TEACHER') {
+      await this.assertTeacherCanAccessSubject(currentUser, assessment.subjectId, classId);
     }
 
     const students = await this.prisma.student.findMany({
