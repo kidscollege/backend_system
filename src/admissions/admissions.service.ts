@@ -6,7 +6,8 @@ import {
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateApplicationDto } from './dto/create-application.dto.js';
 import { ReviewApplicationDto } from './dto/review-application.dto.js';
-import { ApplicationStatus, Role, StudentStatus } from '@prisma/client';
+import { AdvanceApplicationDto } from './dto/advance-application.dto.js';
+import { ApplicationStatus, Prisma, Role, StudentStatus } from '@prisma/client';
 import { randomBytes } from 'node:crypto';
 import * as bcrypt from 'bcrypt';
 
@@ -21,8 +22,45 @@ export class AdmissionsService {
     return `APP${year}${next}`; // e.g. APP260001
   }
 
+  async resolveAdmissionPlacement(applyingClass?: string) {
+    const sessionModel = this.prisma.academicSession as any;
+    const classModel = this.prisma.class as any;
+
+    if (!sessionModel && !classModel && !applyingClass) {
+      return { sessionId: null, classId: null, sectionId: null };
+    }
+
+    const session = sessionModel
+      ? await sessionModel.findFirst({
+          where: { isCurrent: true },
+          select: { id: true },
+        })
+      : null;
+
+    if (!session && !applyingClass) {
+      return { sessionId: null, classId: null, sectionId: null };
+    }
+
+    const resolvedClass = applyingClass && classModel
+      ? await classModel.findFirst({
+          where: {
+            name: applyingClass,
+            ...(session ? { sessionId: session.id } : {}),
+          },
+          select: { id: true, name: true },
+        })
+      : null;
+
+    return {
+      sessionId: session?.id ?? null,
+      classId: resolvedClass?.id ?? null,
+      sectionId: null,
+    };
+  }
+
   async createApplication(dto: CreateApplicationDto) {
     const applicationNo = await this.generateApplicationNumber();
+    const placement = await this.resolveAdmissionPlacement(dto.applyingClass);
 
     return this.prisma.admissionApplication.create({
       data: {
@@ -37,6 +75,9 @@ export class AdmissionsService {
         parentPhone: dto.parentPhone,
         parentEmail: dto.parentEmail,
         notes: dto.notes,
+        documents: dto.documents
+          ? (dto.documents as unknown as Prisma.InputJsonValue)
+          : undefined,
         status: ApplicationStatus.SUBMITTED,
       },
     });
@@ -86,7 +127,7 @@ export class AdmissionsService {
       );
     }
 
-    return this.prisma.admissionApplication.update({
+    const updated = await this.prisma.admissionApplication.update({
       where: { id },
       data: {
         status: dto.status,
@@ -95,6 +136,80 @@ export class AdmissionsService {
         reviewedAt: new Date(),
       },
     });
+
+    if (reviewedById) {
+      await this.prisma.auditLog.create({
+        data: {
+          userId: reviewedById,
+          action: 'ADMISSION_REVIEW',
+          entity: 'AdmissionApplication',
+          entityId: id,
+          metadata: {
+            status: dto.status,
+            notes: dto.notes ?? application.notes,
+          },
+        },
+      });
+    }
+
+    return updated;
+  }
+
+  async advanceApplication(
+    id: string,
+    dto: AdvanceApplicationDto,
+    reviewedById?: string,
+  ) {
+    const application = await this.findOne(id);
+    const allowedNextStatuses: Record<ApplicationStatus, ApplicationStatus[]> = {
+      [ApplicationStatus.SUBMITTED]: [ApplicationStatus.UNDER_REVIEW],
+      [ApplicationStatus.UNDER_REVIEW]: [ApplicationStatus.INTERVIEW_SCHEDULED, ApplicationStatus.APPROVED, ApplicationStatus.REJECTED],
+      [ApplicationStatus.INTERVIEW_SCHEDULED]: [ApplicationStatus.APPROVED, ApplicationStatus.REJECTED],
+      [ApplicationStatus.APPROVED]: [ApplicationStatus.OFFER_SENT],
+      [ApplicationStatus.OFFER_SENT]: [ApplicationStatus.ACCEPTED],
+      [ApplicationStatus.ACCEPTED]: [],
+      [ApplicationStatus.REJECTED]: [],
+      [ApplicationStatus.ADMITTED]: [],
+      [ApplicationStatus.WITHDRAWN]: [],
+    };
+
+    if (!allowedNextStatuses[application.status].includes(dto.status)) {
+      throw new BadRequestException(
+        `Cannot move application from ${application.status} to ${dto.status}`,
+      );
+    }
+
+    if (dto.status === ApplicationStatus.INTERVIEW_SCHEDULED && !dto.interviewDate) {
+      throw new BadRequestException('Interview date is required');
+    }
+
+    const now = new Date();
+    const updated = await this.prisma.admissionApplication.update({
+      where: { id },
+      data: {
+        status: dto.status,
+        notes: dto.notes ?? application.notes,
+        reviewedById,
+        reviewedAt: now,
+        interviewDate: dto.interviewDate ? new Date(dto.interviewDate) : undefined,
+        offerSentAt: dto.status === ApplicationStatus.OFFER_SENT ? now : undefined,
+        acceptedAt: dto.status === ApplicationStatus.ACCEPTED ? now : undefined,
+      },
+    });
+
+    if (reviewedById) {
+      await this.prisma.auditLog.create({
+        data: {
+          userId: reviewedById,
+          action: 'ADMISSION_STAGE_ADVANCED',
+          entity: 'AdmissionApplication',
+          entityId: id,
+          metadata: { from: application.status, to: dto.status },
+        },
+      });
+    }
+
+    return updated;
   }
 
   /**
@@ -111,9 +226,12 @@ export class AdmissionsService {
       throw new BadRequestException('Cannot admit a rejected application');
     }
 
-    if (application.status !== ApplicationStatus.APPROVED) {
+    if (
+      application.status !== ApplicationStatus.APPROVED &&
+      application.status !== ApplicationStatus.ACCEPTED
+    ) {
       throw new BadRequestException(
-        'Only approved applications can be admitted',
+        'Only approved or accepted applications can be admitted',
       );
     }
 
@@ -122,6 +240,9 @@ export class AdmissionsService {
     const count = await this.prisma.student.count();
     const next = (count + 1).toString().padStart(4, '0');
     const admissionNumber = `ADM${year}${next}`;
+    const placement = await this.resolveAdmissionPlacement(
+      application.applyingClass ?? undefined,
+    );
 
     const result = await this.prisma.$transaction(async (tx) => {
       // Create Student
@@ -135,6 +256,8 @@ export class AdmissionsService {
           dateOfBirth: application.dateOfBirth,
           status: StudentStatus.ACTIVE,
           admissionDate: new Date(),
+          currentClassId: placement.classId,
+          sessionId: placement.sessionId,
         },
       });
 
@@ -237,6 +360,21 @@ export class AdmissionsService {
         },
       });
 
+      if (reviewedById) {
+        await tx.auditLog.create({
+          data: {
+            userId: reviewedById,
+            action: 'ADMISSION_ADMIT',
+            entity: 'AdmissionApplication',
+            entityId: id,
+            metadata: {
+              studentId: student.id,
+              admissionNumber: admissionNumber,
+            },
+          },
+        });
+      }
+
       return { application: updatedApplication, parentAccount };
     });
 
@@ -283,7 +421,7 @@ export class AdmissionsService {
   
 
   async getStats() {
-    const [total, submitted, underReview, approved, rejected, admitted] =
+    const [total, submitted, underReview, interviewScheduled, approved, offerSent, accepted, rejected, admitted] =
       await Promise.all([
         this.prisma.admissionApplication.count(),
         this.prisma.admissionApplication.count({
@@ -293,7 +431,16 @@ export class AdmissionsService {
           where: { status: ApplicationStatus.UNDER_REVIEW },
         }),
         this.prisma.admissionApplication.count({
+          where: { status: ApplicationStatus.INTERVIEW_SCHEDULED },
+        }),
+        this.prisma.admissionApplication.count({
           where: { status: ApplicationStatus.APPROVED },
+        }),
+        this.prisma.admissionApplication.count({
+          where: { status: ApplicationStatus.OFFER_SENT },
+        }),
+        this.prisma.admissionApplication.count({
+          where: { status: ApplicationStatus.ACCEPTED },
         }),
         this.prisma.admissionApplication.count({
           where: { status: ApplicationStatus.REJECTED },
@@ -307,7 +454,10 @@ export class AdmissionsService {
       total,
       submitted,
       underReview,
+      interviewScheduled,
       approved,
+      offerSent,
+      accepted,
       rejected,
       admitted,
     };

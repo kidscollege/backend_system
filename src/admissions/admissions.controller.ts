@@ -11,6 +11,7 @@ import {
 import { AdmissionsService } from './admissions.service.js';
 import { CreateApplicationDto } from './dto/create-application.dto.js';
 import { ReviewApplicationDto } from './dto/review-application.dto.js';
+import { AdvanceApplicationDto } from './dto/advance-application.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { Roles } from '../auth/decorators/roles.decorator.js';
@@ -51,6 +52,17 @@ export class AdmissionsController {
     @CurrentUser() user: any,
   ) {
     return this.admissionsService.reviewApplication(id, dto, user.id);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Patch('applications/:id/stage')
+  @Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.PRINCIPAL)
+  advanceStage(
+    @Param('id') id: string,
+    @Body() dto: AdvanceApplicationDto,
+    @CurrentUser() user: any,
+  ) {
+    return this.admissionsService.advanceApplication(id, dto, user.id);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

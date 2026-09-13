@@ -310,7 +310,10 @@ model StudentDocument {
 enum ApplicationStatus {
   SUBMITTED
   UNDER_REVIEW
+  INTERVIEW_SCHEDULED
   APPROVED
+  OFFER_SENT
+  ACCEPTED
   REJECTED
   ADMITTED
   WITHDRAWN
@@ -334,6 +337,9 @@ model AdmissionApplication {
   notes         String?
   reviewedById  String?
   reviewedAt    DateTime?
+  interviewDate DateTime?
+  offerSentAt   DateTime?
+  acceptedAt    DateTime?
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
 

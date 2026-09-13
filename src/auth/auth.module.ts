@@ -11,12 +11,19 @@ import { JwtStrategy } from './strategies/jwt.strategy.js';
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET') || 'fallback-secret',
-        signOptions: {
-          expiresIn: '7d' as any,
-        },
-      }),
+      useFactory: (configService: ConfigService) => {
+        const secret = configService.get<string>('JWT_SECRET');
+        if (!secret) {
+          throw new Error('JWT_SECRET is not configured');
+        }
+
+        return {
+          secret,
+          signOptions: {
+            expiresIn: '7d' as any,
+          },
+        };
+      },
       inject: [ConfigService],
     }),
   ],

@@ -42,6 +42,19 @@ export class AuthService {
       role: user.role,
     };
 
+    await this.prisma.auditLog.create({
+      data: {
+        userId: user.id,
+        action: 'LOGIN',
+        entity: 'User',
+        entityId: user.id,
+        metadata: {
+          email: user.email,
+          role: user.role,
+        },
+      },
+    });
+
     return {
       access_token: this.jwtService.sign(payload),
       user: {

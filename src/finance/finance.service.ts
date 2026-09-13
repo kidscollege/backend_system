@@ -218,10 +218,45 @@ export class FinanceService {
         },
       });
 
+      await tx.auditLog.create({
+        data: {
+          userId: dto.recordedById || null,
+          action: 'FEE_PAYMENT',
+          entity: 'Payment',
+          entityId: payment.id,
+          metadata: {
+            invoiceId: dto.invoiceId,
+            amount: Number(paymentAmount),
+            method: dto.method,
+            status: PaymentStatus.SUCCESS,
+          },
+        },
+      });
+
       return { payment, invoice: updatedInvoice };
     });
 
     return result;
+  }
+
+  async getPayments() {
+    return this.prisma.payment.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: {
+        invoice: {
+          include: {
+            student: {
+              select: {
+                id: true,
+                admissionNumber: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
+          },
+        },
+      },
+    });
   }
 
   async getStudentBalances(studentId: string) {

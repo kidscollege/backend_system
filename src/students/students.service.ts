@@ -126,7 +126,28 @@ export class StudentsService {
     };
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, currentUser?: { id: string; role?: string }) {
+    if (currentUser?.role === 'PARENT') {
+      const parent = await this.prisma.parent.findFirst({
+        where: { userId: currentUser.id },
+      });
+
+      if (!parent) {
+        throw new NotFoundException('Parent profile not found');
+      }
+
+      const link = await this.prisma.studentGuardian.findFirst({
+        where: {
+          parentId: parent.id,
+          studentId: id,
+        },
+      });
+
+      if (!link) {
+        throw new NotFoundException('You do not have access to this student');
+      }
+    }
+
     const student = await this.prisma.student.findUnique({
       where: { id },
       include: {

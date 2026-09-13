@@ -4,7 +4,24 @@ import {
   IsOptional,
   IsEmail,
   IsDateString,
+  IsArray,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+
+class AdmissionDocumentDto {
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @IsString()
+  @IsOptional()
+  type?: string;
+
+  @IsString()
+  @IsNotEmpty()
+  fileUrl: string;
+}
 
 export class CreateApplicationDto {
   @IsString()
@@ -46,4 +63,14 @@ export class CreateApplicationDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @IsOptional()
+  @IsString()
+  sessionId?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => AdmissionDocumentDto)
+  documents?: AdmissionDocumentDto[];
 }

@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateAssessmentDto } from './dto/create-assessment.dto.js';
@@ -13,11 +14,44 @@ import { BulkRecordScoresDto } from './dto/bulk-record-scores.dto.js';
 export class ResultsService {
   constructor(private prisma: PrismaService) {}
 
+  private async assertTeacherCanAccessSubject(
+    currentUser: any,
+    subjectId?: string,
+    classId?: string,
+  ) {
+    if (!currentUser || currentUser.role !== 'TEACHER') {
+      return;
+    }
+
+    const staff = await this.prisma.staff.findFirst({
+      where: { userId: currentUser.id },
+    });
+
+    if (!staff) {
+      throw new ForbiddenException('Teacher profile not found');
+    }
+
+    const assignment = await this.prisma.classSubject.findFirst({
+      where: {
+        teacherId: staff.id,
+        ...(subjectId ? { subjectId } : {}),
+        ...(classId ? { classId } : {}),
+      },
+    });
+
+    if (!assignment) {
+      throw new ForbiddenException(
+        'You are not assigned to this subject/class for this operation',
+      );
+    }
+  }
+
   // ======================
   // ASSESSMENTS
   // ======================
 
-  async createAssessment(dto: CreateAssessmentDto) {
+  async createAssessment(dto: CreateAssessmentDto, currentUser?: any) {
+    await this.assertTeacherCanAccessSubject(currentUser, dto.subjectId);
     const term = await this.prisma.term.findUnique({
       where: { id: dto.termId },
     });
@@ -46,7 +80,11 @@ export class ResultsService {
     });
   }
 
-  async getAssessments(termId?: string, subjectId?: string) {
+  async getAssessments(termId?: string, subjectId?: string, currentUser?: any) {
+    if (currentUser?.role === 'TEACHER') {
+      await this.assertTeacherCanAccessSubject(currentUser, subjectId);
+    }
+
     return this.prisma.assessment.findMany({
       where: {
         ...(termId && { termId }),
@@ -61,7 +99,7 @@ export class ResultsService {
     });
   }
 
-  async getAssessment(id: string) {
+  async getAssessment(id: string, currentUser?: any) {
     const assessment = await this.prisma.assessment.findUnique({
       where: { id },
       include: {
@@ -86,16 +124,24 @@ export class ResultsService {
       throw new NotFoundException('Assessment not found');
     }
 
+    if (currentUser?.role === 'TEACHER') {
+      await this.assertTeacherCanAccessSubject(currentUser, assessment.subjectId);
+    }
+
     return assessment;
   }
 
-  async updateAssessment(id: string, dto: UpdateAssessmentDto) {
+  async updateAssessment(id: string, dto: UpdateAssessmentDto, currentUser?: any) {
     const assessment = await this.prisma.assessment.findUnique({
       where: { id },
     });
 
     if (!assessment) {
       throw new NotFoundException('Assessment not found');
+    }
+
+    if (currentUser?.role === 'TEACHER') {
+      await this.assertTeacherCanAccessSubject(currentUser, assessment.subjectId);
     }
 
     if (dto.termId) {
@@ -135,13 +181,17 @@ export class ResultsService {
     });
   }
 
-  async deleteAssessment(id: string) {
+  async deleteAssessment(id: string, currentUser?: any) {
     const assessment = await this.prisma.assessment.findUnique({
       where: { id },
     });
 
     if (!assessment) {
       throw new NotFoundException('Assessment not found');
+    }
+
+    if (currentUser?.role === 'TEACHER') {
+      await this.assertTeacherCanAccessSubject(currentUser, assessment.subjectId);
     }
 
     await this.prisma.studentAssessment.deleteMany({
@@ -157,13 +207,21 @@ export class ResultsService {
   // RECORD SCORES
   // ======================
 
-  async recordScore(dto: RecordScoreDto) {
+  async recordScore(dto: RecordScoreDto, currentUser?: any) {
     const assessment = await this.prisma.assessment.findUnique({
       where: { id: dto.assessmentId },
     });
 
     if (!assessment) {
       throw new NotFoundException('Assessment not found');
+    }
+
+    if (currentUser?.role === 'TEACHER') {
+      await this.assertTeacherCanAccessSubject(currentUser, assessment.subjectId);
+    }
+
+    if (currentUser?.role === 'TEACHER') {
+      await this.assertTeacherCanAccessSubject(currentUser, assessment.subjectId);
     }
 
     if (dto.score > assessment.maxScore) {
@@ -211,7 +269,7 @@ export class ResultsService {
     });
   }
 
-  async bulkRecordScores(dto: BulkRecordScoresDto) {
+  async bulkRecordScores(dto: BulkRecordScoresDto, currentUser?: any) {
     const assessment = await this.prisma.assessment.findUnique({
       where: { id: dto.assessmentId },
     });

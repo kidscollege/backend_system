@@ -16,6 +16,7 @@ import { QueryStudentsDto } from './dto/query-students.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { Roles } from '../auth/decorators/roles.decorator.js';
+import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
 import { Role, StudentStatus } from '@prisma/client';
 
 @Controller('students')
@@ -50,8 +51,8 @@ export class StudentsController {
     Role.HR_ADMIN,
     Role.PARENT,
   )
-  findOne(@Param('id') id: string) {
-    return this.studentsService.findOne(id);
+  findOne(@Param('id') id: string, @CurrentUser() user?: any) {
+    return this.studentsService.findOne(id, user);
   }
 
   @Patch(':id')

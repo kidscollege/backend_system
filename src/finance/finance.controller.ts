@@ -63,10 +63,14 @@ export class FinanceController {
   }
 
   @Get('payments')
-@Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.BURSAR)
+  @Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.BURSAR)
+  getPayments() {
+    return this.financeService.getPayments();
+  }
 
   // Student Balance
   @Get('students/:studentId/balance')
+  @Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.BURSAR, Role.PRINCIPAL)
   getStudentBalance(@Param('studentId') studentId: string) {
     return this.financeService.getStudentBalances(studentId);
   }
