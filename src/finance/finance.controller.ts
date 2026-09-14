@@ -78,6 +78,12 @@ export class FinanceController {
     return this.financeService.getStudentBalances(studentId);
   }
 
+  @Post('invoices/mark-overdue')
+  @Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.BURSAR)
+  markOverdueInvoices(@CurrentUser() user: any) {
+    return this.financeService.markOverdueInvoices(user);
+  }
+
 
     @Patch('fee-structures/:id')
   @Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.BURSAR)

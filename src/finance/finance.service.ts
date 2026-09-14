@@ -306,6 +306,31 @@ export class FinanceService {
     };
   }
 
+  async markOverdueInvoices(currentUser?: any) {
+    const now = new Date();
+    const result = await this.prisma.feeInvoice.updateMany({
+      where: {
+        dueDate: { lt: now },
+        status: { in: [InvoiceStatus.PENDING, InvoiceStatus.PARTIAL] },
+        balance: { gt: 0 },
+      },
+      data: { status: InvoiceStatus.OVERDUE },
+    });
+
+    if (result.count > 0) {
+      await this.prisma.auditLog.create({
+        data: {
+          userId: currentUser?.id || null,
+          action: 'INVOICES_MARKED_OVERDUE',
+          entity: 'FeeInvoice',
+          metadata: { count: result.count, processedAt: now.toISOString() },
+        },
+      });
+    }
+
+    return { updated: result.count };
+  }
+
     async updateFeeStructure(id: string, dto: CreateFeeStructureDto) {
     const item = await this.prisma.feeStructure.findUnique({ where: { id } });
     if (!item) throw new NotFoundException('Fee structure not found');
