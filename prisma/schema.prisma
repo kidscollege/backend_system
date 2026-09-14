@@ -493,6 +493,7 @@ model FeeInvoice {
   sessionId     String?
   termId        String?
   feePlanId     String?
+  paymentPlan   PaymentPlan?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
@@ -696,4 +697,46 @@ model InventoryItem {
   location  String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+enum PaymentPlanStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum InstallmentStatus {
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+model PaymentPlan {
+  id          String            @id @default(cuid())
+  invoiceId   String            @unique
+  installmentCount Int
+  status      PaymentPlanStatus @default(ACTIVE)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  invoice      FeeInvoice  @relation(fields: [invoiceId], references: [id])
+  installments Installment[]
+}
+
+model Installment {
+  id            String            @id @default(cuid())
+  paymentPlanId String
+  installmentNo Int
+  amount        Decimal           @db.Decimal(12, 2)
+  dueDate       DateTime
+  status        InstallmentStatus @default(PENDING)
+  paidAt        DateTime?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  paymentPlan PaymentPlan @relation(fields: [paymentPlanId], references: [id])
+
+  @@unique([paymentPlanId, installmentNo])
+  @@index([dueDate, status])
 }

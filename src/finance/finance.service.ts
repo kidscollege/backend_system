@@ -8,6 +8,7 @@ import { CreateFeeStructureDto } from './dto/create-fee-structure.dto.js';
 import { CreateInvoiceDto } from './dto/create-invoice.dto.js';
 import { RecordPaymentDto } from './dto/record-payment.dto.js';
 import { CreateFeePlanDto } from './dto/create-fee-plan.dto.js';
+import { CreatePaymentPlanDto } from './dto/create-payment-plan.dto.js';
 import { InvoiceStatus, PaymentStatus, PaymentMethod } from '@prisma/client';
 import { Prisma } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
@@ -204,6 +205,45 @@ export class FinanceService {
     return this.prisma.studentFeePlan.findMany({
       where: studentId ? { studentId } : undefined,
       include: { items: { include: { feeStructure: true } }, student: true },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async createPaymentPlan(dto: CreatePaymentPlanDto) {
+    const invoice = await this.prisma.feeInvoice.findUnique({ where: { id: dto.invoiceId } });
+    if (!invoice) throw new NotFoundException('Invoice not found');
+    if (invoice.status === InvoiceStatus.PAID || invoice.balance.lessThanOrEqualTo(0)) {
+      throw new BadRequestException('A paid invoice cannot have a payment plan');
+    }
+
+    const existing = await this.prisma.paymentPlan.findUnique({ where: { invoiceId: dto.invoiceId } });
+    if (existing) throw new BadRequestException('Invoice already has a payment plan');
+
+    const total = invoice.balance;
+    const baseAmount = total.div(dto.installmentCount);
+    const firstDueDate = new Date(dto.firstDueDate);
+    const installments = Array.from({ length: dto.installmentCount }, (_, index) => ({
+      installmentNo: index + 1,
+      amount: index === dto.installmentCount - 1
+        ? total.sub(baseAmount.mul(dto.installmentCount - 1))
+        : baseAmount,
+      dueDate: new Date(firstDueDate.getFullYear(), firstDueDate.getMonth() + index, firstDueDate.getDate()),
+    }));
+
+    return this.prisma.paymentPlan.create({
+      data: {
+        invoiceId: dto.invoiceId,
+        installmentCount: dto.installmentCount,
+        installments: { create: installments },
+      },
+      include: { invoice: true, installments: { orderBy: { installmentNo: 'asc' } } },
+    });
+  }
+
+  async getPaymentPlans(invoiceId?: string) {
+    return this.prisma.paymentPlan.findMany({
+      where: invoiceId ? { invoiceId } : undefined,
+      include: { invoice: { include: { student: true } }, installments: { orderBy: { installmentNo: 'asc' } } },
       orderBy: { createdAt: 'desc' },
     });
   }
