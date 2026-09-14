@@ -506,6 +506,13 @@ model Payment {
   invoice FeeInvoice @relation(fields: [invoiceId], references: [id])
 }
 
+model NumberSequence {
+  id         String   @id @default(cuid())
+  name       String   @unique
+  nextValue  Int      @default(1)
+  updatedAt  DateTime @updatedAt
+}
+
 // ======================
 // ATTENDANCE
 // ======================

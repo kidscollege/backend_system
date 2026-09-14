@@ -15,20 +15,19 @@ import { Prisma } from '@prisma/client';
 export class FinanceService {
   constructor(private prisma: PrismaService) {}
 
-  private async generateInvoiceNumber(): Promise<string> {
-    const year = new Date().getFullYear().toString().slice(-2);
-    const count = await this.prisma.feeInvoice.count();
-    const next = (count + 1).toString().padStart(5, '0');
-    return `INV${year}${next}`; // e.g. INV2600001
-  }
-
-  private async generateReceiptNumber(): Promise<string> {
-    const year = new Date().getFullYear().toString().slice(-2);
-    const count = await this.prisma.payment.count({
-      where: { status: PaymentStatus.SUCCESS },
+  private async nextDocumentNumber(
+    tx: Prisma.TransactionClient,
+    name: string,
+    prefix: string,
+  ) {
+    const sequence = await tx.numberSequence.upsert({
+      where: { name },
+      update: { nextValue: { increment: 1 } },
+      create: { name, nextValue: 2 },
     });
-    const next = (count + 1).toString().padStart(5, '0');
-    return `RCPT${year}${next}`;
+    const value = sequence.nextValue - 1;
+    const year = new Date().getFullYear().toString().slice(-2);
+    return `${prefix}${year}${value.toString().padStart(5, '0')}`;
   }
 
   // ======================
@@ -78,38 +77,39 @@ export class FinanceService {
       0,
     );
 
-    const invoiceNumber = await this.generateInvoiceNumber();
-
-    const invoice = await this.prisma.feeInvoice.create({
-      data: {
-        studentId: dto.studentId,
-        invoiceNumber,
-        totalAmount: new Prisma.Decimal(totalAmount),
-        amountPaid: new Prisma.Decimal(0),
-        balance: new Prisma.Decimal(totalAmount),
-        status: InvoiceStatus.PENDING,
-        dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
-        sessionId: dto.sessionId,
-        termId: dto.termId,
-        items: {
-          create: dto.items.map((item) => ({
-            description: item.description,
-            amount: new Prisma.Decimal(item.amount),
-            feeStructureId: item.feeStructureId,
-          })),
-        },
-      },
-      include: {
-        items: true,
-        student: {
-          select: {
-            id: true,
-            admissionNumber: true,
-            firstName: true,
-            lastName: true,
+    const invoice = await this.prisma.$transaction(async (tx) => {
+      const invoiceNumber = await this.nextDocumentNumber(tx, 'invoice', 'INV');
+      return tx.feeInvoice.create({
+        data: {
+          studentId: dto.studentId,
+          invoiceNumber,
+          totalAmount: new Prisma.Decimal(totalAmount),
+          amountPaid: new Prisma.Decimal(0),
+          balance: new Prisma.Decimal(totalAmount),
+          status: InvoiceStatus.PENDING,
+          dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
+          sessionId: dto.sessionId,
+          termId: dto.termId,
+          items: {
+            create: dto.items.map((item) => ({
+              description: item.description,
+              amount: new Prisma.Decimal(item.amount),
+              feeStructureId: item.feeStructureId,
+            })),
           },
         },
-      },
+        include: {
+          items: true,
+          student: {
+            select: {
+              id: true,
+              admissionNumber: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
+      });
     });
 
     return invoice;
@@ -207,9 +207,8 @@ export class FinanceService {
       newStatus = InvoiceStatus.PAID;
     }
 
-    const receiptNumber = await this.generateReceiptNumber();
-
     const result = await this.prisma.$transaction(async (tx) => {
+      const receiptNumber = await this.nextDocumentNumber(tx, 'receipt', 'RCPT');
       const payment = await tx.payment.create({
         data: {
           invoiceId: dto.invoiceId,
