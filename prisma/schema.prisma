@@ -537,6 +537,8 @@ model Payment {
   paystackAccessCode String?
   receiptNumber      String?       @unique
   paidAt             DateTime?
+  refundedAt         DateTime?
+  refundReason       String?
   recordedById       String?
   notes              String?
   createdAt          DateTime      @default(now())

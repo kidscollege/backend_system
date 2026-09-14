@@ -353,6 +353,56 @@ export class FinanceService {
     });
   }
 
+  async refundPayment(id: string, reason: string, currentUser?: any) {
+    const payment = await this.prisma.payment.findUnique({
+      where: { id },
+      include: { invoice: true },
+    });
+    if (!payment) throw new NotFoundException('Payment not found');
+    if (payment.status !== PaymentStatus.SUCCESS) {
+      throw new BadRequestException('Only successful payments can be refunded');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const refundedPayment = await tx.payment.update({
+        where: { id },
+        data: {
+          status: PaymentStatus.REFUNDED,
+          refundedAt: new Date(),
+          refundReason: reason,
+        },
+      });
+
+      const newAmountPaid = payment.invoice.amountPaid.sub(payment.amount);
+      const newBalance = payment.invoice.totalAmount.sub(newAmountPaid);
+      const invoiceStatus = newAmountPaid.equals(0)
+        ? InvoiceStatus.PENDING
+        : InvoiceStatus.PARTIAL;
+
+      const invoice = await tx.feeInvoice.update({
+        where: { id: payment.invoiceId },
+        data: {
+          amountPaid: newAmountPaid,
+          balance: newBalance,
+          status: invoiceStatus,
+        },
+        include: { items: true, payments: true, student: true },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          userId: currentUser?.id || null,
+          action: 'FEE_PAYMENT_REFUNDED',
+          entity: 'Payment',
+          entityId: id,
+          metadata: { invoiceId: payment.invoiceId, amount: Number(payment.amount), reason },
+        },
+      });
+
+      return { payment: refundedPayment, invoice };
+    });
+  }
+
   async getStudentBalances(studentId: string) {
     const invoices = await this.prisma.feeInvoice.findMany({
       where: {
