@@ -32,6 +32,10 @@ export class CreateInvoiceDto {
   @IsDateString()
   dueDate?: string;
 
+  @IsOptional()
+  @IsString()
+  feePlanId?: string;
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => InvoiceItemDto)

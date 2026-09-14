@@ -13,6 +13,7 @@ import { FinanceService } from './finance.service.js';
 import { CreateFeeStructureDto } from './dto/create-fee-structure.dto.js';
 import { CreateInvoiceDto } from './dto/create-invoice.dto.js';
 import { RecordPaymentDto } from './dto/record-payment.dto.js';
+import { CreateFeePlanDto } from './dto/create-fee-plan.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { Roles } from '../auth/decorators/roles.decorator.js';
@@ -35,6 +36,24 @@ export class FinanceController {
   @Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.BURSAR, Role.PRINCIPAL)
   getFeeStructures() {
     return this.financeService.getFeeStructures();
+  }
+
+  @Post('fee-plans')
+  @Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.BURSAR)
+  createFeePlan(@Body() dto: CreateFeePlanDto) {
+    return this.financeService.createFeePlan(dto);
+  }
+
+  @Get('fee-plans')
+  @Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.BURSAR, Role.PRINCIPAL)
+  getFeePlans(@Query('studentId') studentId?: string) {
+    return this.financeService.getFeePlans(studentId);
+  }
+
+  @Post('fee-plans/:id/invoice')
+  @Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.BURSAR)
+  invoiceFeePlan(@Param('id') id: string, @Body('dueDate') dueDate?: string) {
+    return this.financeService.invoiceFeePlan(id, dueDate);
   }
 
   // Invoices

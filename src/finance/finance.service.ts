@@ -7,6 +7,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateFeeStructureDto } from './dto/create-fee-structure.dto.js';
 import { CreateInvoiceDto } from './dto/create-invoice.dto.js';
 import { RecordPaymentDto } from './dto/record-payment.dto.js';
+import { CreateFeePlanDto } from './dto/create-fee-plan.dto.js';
 import { InvoiceStatus, PaymentStatus, PaymentMethod } from '@prisma/client';
 import { Prisma } from '@prisma/client';
 
@@ -90,6 +91,7 @@ export class FinanceService {
           dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
           sessionId: dto.sessionId,
           termId: dto.termId,
+          feePlanId: dto.feePlanId,
           items: {
             create: dto.items.map((item) => ({
               description: item.description,
@@ -113,6 +115,72 @@ export class FinanceService {
     });
 
     return invoice;
+  }
+
+  async createFeePlan(dto: CreateFeePlanDto) {
+    if (!dto.feeStructureIds.length) {
+      throw new BadRequestException('A fee plan must contain at least one fee structure');
+    }
+
+    const student = await this.prisma.student.findUnique({ where: { id: dto.studentId } });
+    if (!student) throw new NotFoundException('Student not found');
+
+    const structures = await this.prisma.feeStructure.findMany({
+      where: { id: { in: dto.feeStructureIds }, isActive: true },
+    });
+    if (structures.length !== dto.feeStructureIds.length) {
+      throw new BadRequestException('One or more fee structures are invalid or inactive');
+    }
+
+    const discount = new Prisma.Decimal(dto.discount || 0);
+    const subtotal = structures.reduce((sum, item) => sum.add(item.amount), new Prisma.Decimal(0));
+    if (discount.greaterThan(subtotal)) throw new BadRequestException('Discount cannot exceed the fee plan total');
+
+    return this.prisma.studentFeePlan.create({
+      data: {
+        studentId: dto.studentId,
+        sessionId: dto.sessionId,
+        termId: dto.termId,
+        discount,
+        items: { create: structures.map((item) => ({ feeStructureId: item.id, amount: item.amount })) },
+      },
+      include: { items: { include: { feeStructure: true } }, student: true },
+    });
+  }
+
+  async getFeePlans(studentId?: string) {
+    return this.prisma.studentFeePlan.findMany({
+      where: studentId ? { studentId } : undefined,
+      include: { items: { include: { feeStructure: true } }, student: true },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async invoiceFeePlan(planId: string, dueDate?: string) {
+    const plan = await this.prisma.studentFeePlan.findUnique({
+      where: { id: planId },
+      include: { items: { include: { feeStructure: true } } },
+    });
+    if (!plan) throw new NotFoundException('Fee plan not found');
+    if (plan.status !== 'ACTIVE') throw new BadRequestException('Only active fee plans can be invoiced');
+
+    const discount = Number(plan.discount);
+    const subtotal = plan.items.reduce((sum, item) => sum + Number(item.amount), 0);
+    const itemCount = plan.items.length;
+    const items = plan.items.map((item, index) => ({
+      description: item.feeStructure.name,
+      amount: String(Number(item.amount) - (index === itemCount - 1 ? discount : 0)),
+      feeStructureId: item.feeStructureId,
+    }));
+
+    return this.createInvoice({
+      studentId: plan.studentId,
+      sessionId: plan.sessionId,
+      termId: plan.termId || undefined,
+      dueDate,
+      feePlanId: plan.id,
+      items,
+    });
   }
 
   async getInvoices(studentId?: string) {

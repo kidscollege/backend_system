@@ -292,6 +292,7 @@ model Student {
   assessments  StudentAssessment[]
   attendance   AttendanceRecord[]
   feeInvoices  FeeInvoice[]
+  feePlans     StudentFeePlan[]
   applications AdmissionApplication[]
 
   @@index([admissionNumber])
@@ -434,6 +435,42 @@ model FeeStructure {
   updatedAt   DateTime @updatedAt
 
   invoices FeeInvoiceItem[]
+  planItems StudentFeePlanItem[]
+}
+
+enum FeePlanStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+model StudentFeePlan {
+  id         String       @id @default(cuid())
+  studentId  String
+  sessionId  String
+  termId     String?
+  discount   Decimal      @default(0) @db.Decimal(12, 2)
+  status     FeePlanStatus @default(ACTIVE)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  student Student @relation(fields: [studentId], references: [id])
+  items   StudentFeePlanItem[]
+  invoices FeeInvoice[]
+
+  @@index([studentId, sessionId, termId])
+}
+
+model StudentFeePlanItem {
+  id            String   @id @default(cuid())
+  planId        String
+  feeStructureId String
+  amount        Decimal  @db.Decimal(12, 2)
+
+  plan         StudentFeePlan @relation(fields: [planId], references: [id])
+  feeStructure FeeStructure   @relation(fields: [feeStructureId], references: [id])
+
+  @@unique([planId, feeStructureId])
 }
 
 enum InvoiceStatus {
@@ -455,12 +492,14 @@ model FeeInvoice {
   dueDate       DateTime?
   sessionId     String?
   termId        String?
+  feePlanId     String?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
   student  Student          @relation(fields: [studentId], references: [id])
   items    FeeInvoiceItem[]
   payments Payment[]
+  feePlan  StudentFeePlan? @relation(fields: [feePlanId], references: [id])
 }
 
 model FeeInvoiceItem {
