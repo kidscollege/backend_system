@@ -164,4 +164,10 @@ getPaymentsSummary(
     sessionId,
   });
 }
+
+@Get('reports/reconciliation')
+@Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.BURSAR)
+getReconciliationReport() {
+  return this.financeService.getReconciliationReport();
+}
 }

@@ -476,6 +476,39 @@ export class FinanceService {
     };
   }
 
+  async getReconciliationReport() {
+    const invoices = await this.prisma.feeInvoice.findMany({
+      include: {
+        payments: { where: { status: PaymentStatus.SUCCESS } },
+        student: {
+          select: {
+            admissionNumber: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+      orderBy: { updatedAt: 'desc' },
+    });
+
+    return invoices.map((invoice) => {
+      const successfulPayments = invoice.payments.reduce(
+        (sum, payment) => sum.add(payment.amount),
+        new Prisma.Decimal(0),
+      );
+      const difference = invoice.amountPaid.sub(successfulPayments);
+      return {
+        invoiceId: invoice.id,
+        invoiceNumber: invoice.invoiceNumber,
+        student: invoice.student,
+        invoiceAmountPaid: Number(invoice.amountPaid),
+        successfulPayments: Number(successfulPayments),
+        difference: Number(difference),
+        isBalanced: difference.equals(0),
+      };
+    });
+  }
+
   async markOverdueInvoices(currentUser?: any) {
     const now = new Date();
     const result = await this.prisma.feeInvoice.updateMany({
