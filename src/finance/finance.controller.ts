@@ -15,6 +15,7 @@ import { CreateInvoiceDto } from './dto/create-invoice.dto.js';
 import { RecordPaymentDto } from './dto/record-payment.dto.js';
 import { CreateFeePlanDto } from './dto/create-fee-plan.dto.js';
 import { RefundPaymentDto } from './dto/refund-payment.dto.js';
+import { InitializePaystackDto } from './dto/initialize-paystack.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { Roles } from '../auth/decorators/roles.decorator.js';
@@ -84,6 +85,13 @@ export class FinanceController {
   recordPayment(@Body() dto: RecordPaymentDto, @CurrentUser() user: any) {
     return this.financeService.recordPayment(dto, user);
   }
+
+  @Post('payments/paystack/initialize')
+  @Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.BURSAR, Role.PARENT)
+  initializePaystack(@Body() dto: InitializePaystackDto) {
+    return this.financeService.initializePaystackPayment(dto.invoiceId, dto.email);
+  }
+
 
   @Get('payments')
   @Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.BURSAR)

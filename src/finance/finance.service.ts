@@ -10,11 +10,21 @@ import { RecordPaymentDto } from './dto/record-payment.dto.js';
 import { CreateFeePlanDto } from './dto/create-fee-plan.dto.js';
 import { InvoiceStatus, PaymentStatus, PaymentMethod } from '@prisma/client';
 import { Prisma } from '@prisma/client';
+import { ConfigService } from '@nestjs/config';
 
 
 @Injectable()
 export class FinanceService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private configService?: ConfigService,
+  ) {}
+
+  private getPaystackSecret() {
+    const secret = this.configService?.get<string>('PAYSTACK_SECRET_KEY');
+    if (!secret) throw new BadRequestException('Paystack is not configured');
+    return secret;
+  }
 
   private async nextDocumentNumber(
     tx: Prisma.TransactionClient,
@@ -115,6 +125,48 @@ export class FinanceService {
     });
 
     return invoice;
+  }
+
+  async initializePaystackPayment(invoiceId: string, email: string) {
+    const invoice = await this.prisma.feeInvoice.findUnique({ where: { id: invoiceId } });
+    if (!invoice) throw new NotFoundException('Invoice not found');
+    if (invoice.balance.lessThanOrEqualTo(0)) throw new BadRequestException('Invoice is already paid');
+
+    const response = await fetch('https://api.paystack.co/transaction/initialize', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${this.getPaystackSecret()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email,
+        amount: invoice.balance.mul(100).toFixed(0),
+        metadata: { invoiceId: invoice.id },
+      }),
+    });
+    const payload = await response.json() as { status?: boolean; message?: string; data?: unknown };
+    if (!response.ok || !payload.status) {
+      throw new BadRequestException(payload.message || 'Paystack initialization failed');
+    }
+    return payload.data;
+  }
+
+  async confirmPaystackPayment(data: { invoiceId: string; reference: string; amountKobo: number }) {
+    const expectedAmount = await this.prisma.feeInvoice.findUnique({
+      where: { id: data.invoiceId },
+      select: { balance: true },
+    });
+    if (!expectedAmount) throw new NotFoundException('Invoice not found');
+    const amount = new Prisma.Decimal(data.amountKobo).div(100);
+    if (amount.greaterThan(expectedAmount.balance)) {
+      throw new BadRequestException('Paystack amount exceeds invoice balance');
+    }
+    return this.recordPayment({
+      invoiceId: data.invoiceId,
+      amount: amount.toNumber(),
+      method: PaymentMethod.PAYSTACK,
+      paystackRef: data.reference,
+    });
   }
 
   async createFeePlan(dto: CreateFeePlanDto) {
