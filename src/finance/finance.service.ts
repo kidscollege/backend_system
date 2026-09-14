@@ -156,6 +156,32 @@ export class FinanceService {
   // ======================
 
   async recordPayment(dto: RecordPaymentDto, currentUser?: any) {
+    if (dto.paystackRef) {
+      const existingPayment = await this.prisma.payment.findUnique({
+        where: { paystackRef: dto.paystackRef },
+        include: {
+          invoice: {
+            include: {
+              items: true,
+              payments: true,
+              student: {
+                select: {
+                  id: true,
+                  admissionNumber: true,
+                  firstName: true,
+                  lastName: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (existingPayment) {
+        return { payment: existingPayment, invoice: existingPayment.invoice };
+      }
+    }
+
     const invoice = await this.prisma.feeInvoice.findUnique({
       where: { id: dto.invoiceId },
     });
@@ -192,6 +218,7 @@ export class FinanceService {
           status: PaymentStatus.SUCCESS,
           receiptNumber,
           paidAt: new Date(),
+          recordedById: currentUser?.id || null,
           notes: dto.notes,
           paystackRef: dto.paystackRef,
         },

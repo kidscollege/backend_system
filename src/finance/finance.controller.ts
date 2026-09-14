@@ -32,6 +32,7 @@ export class FinanceController {
   }
 
   @Get('fee-structures')
+  @Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.BURSAR, Role.PRINCIPAL)
   getFeeStructures() {
     return this.financeService.getFeeStructures();
   }
@@ -52,6 +53,7 @@ export class FinanceController {
   }
 
   @Get('invoices/:id')
+  @Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.BURSAR, Role.PRINCIPAL)
   getInvoice(@Param('id') id: string) {
     return this.financeService.getInvoice(id);
   }
