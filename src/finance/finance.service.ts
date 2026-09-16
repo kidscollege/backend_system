@@ -765,6 +765,28 @@ export class FinanceService {
     };
   }
 
+  async getRefundReport() {
+    const refunds = await this.prisma.payment.findMany({
+      where: { status: PaymentStatus.REFUNDED },
+      include: {
+        invoice: {
+          select: {
+            invoiceNumber: true,
+            student: { select: { admissionNumber: true, firstName: true, lastName: true } },
+          },
+        },
+      },
+      orderBy: { refundedAt: 'desc' },
+    });
+
+    const totalRefunded = refunds.reduce((sum, payment) => sum + Number(payment.amount), 0);
+    return {
+      totalRefunded,
+      count: refunds.length,
+      refunds,
+    };
+  }
+
   async markOverdueInvoices(currentUser?: any) {
     const now = new Date();
     const result = await this.prisma.feeInvoice.updateMany({

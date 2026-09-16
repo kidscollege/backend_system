@@ -175,6 +175,23 @@ describe('FinanceService', () => {
     });
   });
 
+  it('summarizes refunded payments for finance staff', async () => {
+    const prisma = {
+      payment: {
+        findMany: vi.fn().mockResolvedValue([
+          { amount: new Prisma.Decimal(100), status: PaymentStatus.REFUNDED },
+          { amount: new Prisma.Decimal(75), status: PaymentStatus.REFUNDED },
+        ]),
+      },
+    } as any;
+    const service = new FinanceService(prisma);
+
+    await expect(service.getRefundReport()).resolves.toMatchObject({
+      totalRefunded: 175,
+      count: 2,
+    });
+  });
+
   it('refunds a successful payment and restores the invoice balance', async () => {
     const payment = {
       id: 'payment-1',

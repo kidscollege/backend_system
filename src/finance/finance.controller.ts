@@ -206,4 +206,10 @@ getReconciliationReport() {
 getPaymentPlanSummary() {
   return this.financeService.getPaymentPlanSummary();
 }
+
+@Get('reports/refunds')
+@Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.BURSAR)
+getRefundReport() {
+  return this.financeService.getRefundReport();
+}
 }
