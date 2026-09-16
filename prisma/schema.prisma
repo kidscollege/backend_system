@@ -444,6 +444,11 @@ enum FeePlanStatus {
   CANCELLED
 }
 
+enum FeeAdjustmentType {
+  SCHOLARSHIP
+  WAIVER
+}
+
 model StudentFeePlan {
   id         String       @id @default(cuid())
   studentId  String
@@ -456,9 +461,24 @@ model StudentFeePlan {
 
   student Student @relation(fields: [studentId], references: [id])
   items   StudentFeePlanItem[]
+  adjustments StudentFeePlanAdjustment[]
   invoices FeeInvoice[]
 
   @@index([studentId, sessionId, termId])
+}
+
+model StudentFeePlanAdjustment {
+  id          String            @id @default(cuid())
+  planId      String
+  type        FeeAdjustmentType
+  amount      Decimal           @db.Decimal(12, 2)
+  reason      String
+  approvedById String?
+  createdAt   DateTime          @default(now())
+
+  plan StudentFeePlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@index([planId, type])
 }
 
 model StudentFeePlanItem {
@@ -546,6 +566,7 @@ model Payment {
   updatedAt          DateTime      @updatedAt
 
   invoice FeeInvoice @relation(fields: [invoiceId], references: [id])
+  installmentAllocations InstallmentPaymentAllocation[]
 }
 
 model NumberSequence {
@@ -736,7 +757,22 @@ model Installment {
   updatedAt     DateTime          @updatedAt
 
   paymentPlan PaymentPlan @relation(fields: [paymentPlanId], references: [id])
+  paymentAllocations InstallmentPaymentAllocation[]
 
   @@unique([paymentPlanId, installmentNo])
   @@index([dueDate, status])
+}
+
+model InstallmentPaymentAllocation {
+  id            String      @id @default(cuid())
+  paymentId     String
+  installmentId String
+  amount        Decimal     @db.Decimal(12, 2)
+  createdAt     DateTime    @default(now())
+
+  payment     Payment     @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  installment Installment @relation(fields: [installmentId], references: [id], onDelete: Cascade)
+
+  @@unique([paymentId, installmentId])
+  @@index([installmentId])
 }

@@ -9,6 +9,7 @@ import { CreateInvoiceDto } from './dto/create-invoice.dto.js';
 import { RecordPaymentDto } from './dto/record-payment.dto.js';
 import { CreateFeePlanDto } from './dto/create-fee-plan.dto.js';
 import { CreatePaymentPlanDto } from './dto/create-payment-plan.dto.js';
+import { CreateFeeAdjustmentDto } from './dto/create-fee-adjustment.dto.js';
 import { InvoiceStatus, PaymentStatus, PaymentMethod } from '@prisma/client';
 import { Prisma } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
@@ -204,8 +205,34 @@ export class FinanceService {
   async getFeePlans(studentId?: string) {
     return this.prisma.studentFeePlan.findMany({
       where: studentId ? { studentId } : undefined,
-      include: { items: { include: { feeStructure: true } }, student: true },
+      include: { items: { include: { feeStructure: true } }, adjustments: true, student: true },
       orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async createFeeAdjustment(planId: string, dto: CreateFeeAdjustmentDto, currentUser?: any) {
+    const plan = await this.prisma.studentFeePlan.findUnique({
+      where: { id: planId },
+      include: { items: true, adjustments: true },
+    });
+    if (!plan) throw new NotFoundException('Fee plan not found');
+    if (plan.status !== 'ACTIVE') throw new BadRequestException('Only active fee plans can be adjusted');
+
+    const subtotal = plan.items.reduce((sum, item) => sum.add(item.amount), new Prisma.Decimal(0));
+    const existingAdjustments = plan.adjustments.reduce((sum, item) => sum.add(item.amount), new Prisma.Decimal(0));
+    const amount = new Prisma.Decimal(dto.amount);
+    if (existingAdjustments.add(plan.discount).add(amount).greaterThan(subtotal)) {
+      throw new BadRequestException('Total discounts, scholarships, and waivers cannot exceed the fee plan total');
+    }
+
+    return this.prisma.studentFeePlanAdjustment.create({
+      data: {
+        planId,
+        type: dto.type,
+        amount,
+        reason: dto.reason,
+        approvedById: currentUser?.id,
+      },
     });
   }
 
@@ -251,19 +278,27 @@ export class FinanceService {
   async invoiceFeePlan(planId: string, dueDate?: string) {
     const plan = await this.prisma.studentFeePlan.findUnique({
       where: { id: planId },
-      include: { items: { include: { feeStructure: true } } },
+      include: { items: { include: { feeStructure: true } }, adjustments: true },
     });
     if (!plan) throw new NotFoundException('Fee plan not found');
     if (plan.status !== 'ACTIVE') throw new BadRequestException('Only active fee plans can be invoiced');
 
-    const discount = Number(plan.discount);
-    const subtotal = plan.items.reduce((sum, item) => sum + Number(item.amount), 0);
-    const itemCount = plan.items.length;
-    const items = plan.items.map((item, index) => ({
-      description: item.feeStructure.name,
-      amount: String(Number(item.amount) - (index === itemCount - 1 ? discount : 0)),
-      feeStructureId: item.feeStructureId,
-    }));
+    const totalAdjustments = (plan.adjustments ?? []).reduce(
+      (sum, adjustment) => sum.add(adjustment.amount),
+      new Prisma.Decimal(plan.discount),
+    );
+    let remainingDiscount = totalAdjustments;
+    const items = plan.items.map((item) => {
+      const itemAmount = new Prisma.Decimal(item.amount);
+      const appliedDiscount = Prisma.Decimal.min(remainingDiscount, itemAmount);
+      remainingDiscount = remainingDiscount.sub(appliedDiscount);
+
+      return {
+        description: item.feeStructure.name,
+        amount: itemAmount.sub(appliedDiscount).toString(),
+        feeStructureId: item.feeStructureId,
+      };
+    });
 
     return this.createInvoice({
       studentId: plan.studentId,
@@ -383,6 +418,64 @@ export class FinanceService {
         },
       });
 
+      const paymentPlan = await tx.paymentPlan.findUnique({
+        where: { invoiceId: dto.invoiceId },
+        include: {
+          installments: {
+            where: { status: { not: 'CANCELLED' } },
+            include: { paymentAllocations: true },
+            orderBy: { installmentNo: 'asc' },
+          },
+        },
+      });
+
+      if (paymentPlan?.installments.length) {
+        let remainingPayment = paymentAmount;
+
+        for (const installment of paymentPlan.installments) {
+          if (remainingPayment.lessThanOrEqualTo(0)) break;
+
+          const alreadyAllocated = installment.paymentAllocations.reduce(
+            (sum, allocation) => sum.add(allocation.amount),
+            new Prisma.Decimal(0),
+          );
+          const remainingInstallment = installment.amount.sub(alreadyAllocated);
+          if (remainingInstallment.lessThanOrEqualTo(0)) continue;
+
+          const allocationAmount = Prisma.Decimal.min(remainingPayment, remainingInstallment);
+          await tx.installmentPaymentAllocation.create({
+            data: {
+              paymentId: payment.id,
+              installmentId: installment.id,
+              amount: allocationAmount,
+            },
+          });
+
+          remainingPayment = remainingPayment.sub(allocationAmount);
+          const fullyPaid = allocationAmount.equals(remainingInstallment);
+          await tx.installment.update({
+            where: { id: installment.id },
+            data: {
+              status: fullyPaid ? 'PAID' : installment.status,
+              paidAt: fullyPaid ? new Date() : installment.paidAt,
+            },
+          });
+        }
+
+        const incompleteInstallments = await tx.installment.count({
+          where: {
+            paymentPlanId: paymentPlan.id,
+            status: { notIn: ['PAID', 'CANCELLED'] },
+          },
+        });
+        if (incompleteInstallments === 0) {
+          await tx.paymentPlan.update({
+            where: { id: paymentPlan.id },
+            data: { status: 'COMPLETED' },
+          });
+        }
+      }
+
       const updatedInvoice = await tx.feeInvoice.update({
         where: { id: dto.invoiceId },
         data: {
@@ -448,7 +541,10 @@ export class FinanceService {
   async refundPayment(id: string, reason: string, currentUser?: any) {
     const payment = await this.prisma.payment.findUnique({
       where: { id },
-      include: { invoice: true },
+      include: {
+        invoice: true,
+        installmentAllocations: { include: { installment: true } },
+      },
     });
     if (!payment) throw new NotFoundException('Payment not found');
     if (payment.status !== PaymentStatus.SUCCESS) {
@@ -464,6 +560,39 @@ export class FinanceService {
           refundReason: reason,
         },
       });
+
+      const installmentAllocations = payment.installmentAllocations ?? [];
+      if (installmentAllocations.length) {
+        await tx.installmentPaymentAllocation.deleteMany({ where: { paymentId: id } });
+
+        for (const allocation of installmentAllocations) {
+          const remainingAllocations = await tx.installmentPaymentAllocation.findMany({
+            where: { installmentId: allocation.installmentId },
+          });
+          const allocatedAmount = remainingAllocations.reduce(
+            (sum, item) => sum.add(item.amount),
+            new Prisma.Decimal(0),
+          );
+          const installmentStatus = allocatedAmount.greaterThanOrEqualTo(allocation.installment.amount)
+            ? 'PAID'
+            : allocation.installment.dueDate < new Date()
+              ? 'OVERDUE'
+              : 'PENDING';
+
+          await tx.installment.update({
+            where: { id: allocation.installmentId },
+            data: {
+              status: installmentStatus,
+              paidAt: installmentStatus === 'PAID' ? allocation.installment.paidAt : null,
+            },
+          });
+        }
+
+        await tx.paymentPlan.updateMany({
+          where: { invoiceId: payment.invoiceId, status: 'COMPLETED' },
+          data: { status: 'ACTIVE' },
+        });
+      }
 
       const newAmountPaid = payment.invoice.amountPaid.sub(payment.amount);
       const newBalance = payment.invoice.totalAmount.sub(newAmountPaid);
@@ -516,6 +645,51 @@ export class FinanceService {
     };
   }
 
+  async getStudentStatement(studentId: string) {
+    const student = await this.prisma.student.findUnique({
+      where: { id: studentId },
+      select: {
+        id: true,
+        admissionNumber: true,
+        firstName: true,
+        lastName: true,
+      },
+    });
+    if (!student) throw new NotFoundException('Student not found');
+
+    const invoices = await this.prisma.feeInvoice.findMany({
+      where: { studentId },
+      include: {
+        items: true,
+        payments: {
+          where: { status: PaymentStatus.SUCCESS },
+          orderBy: { paidAt: 'asc' },
+        },
+        paymentPlan: {
+          include: { installments: { orderBy: { installmentNo: 'asc' } } },
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    const totalInvoiced = invoices.reduce(
+      (sum, invoice) => sum + Number(invoice.totalAmount),
+      0,
+    );
+    const totalPaid = invoices.reduce(
+      (sum, invoice) => sum + Number(invoice.amountPaid),
+      0,
+    );
+
+    return {
+      student,
+      totalInvoiced,
+      totalPaid,
+      totalOutstanding: totalInvoiced - totalPaid,
+      invoices,
+    };
+  }
+
   async getReconciliationReport() {
     const invoices = await this.prisma.feeInvoice.findMany({
       include: {
@@ -549,6 +723,48 @@ export class FinanceService {
     });
   }
 
+  async getPaymentPlanSummary() {
+    const installments = await this.prisma.installment.findMany({
+      include: {
+        paymentPlan: {
+          include: {
+            invoice: {
+              select: { invoiceNumber: true, student: { select: { firstName: true, lastName: true } } },
+            },
+          },
+        },
+      },
+      orderBy: { dueDate: 'asc' },
+    });
+
+    const summary = installments.reduce(
+      (result, installment) => {
+        const amount = Number(installment.amount);
+        result.totalCount += 1;
+        result.totalAmount += amount;
+        result.byStatus[installment.status].count += 1;
+        result.byStatus[installment.status].amount += amount;
+        return result;
+      },
+      {
+        totalCount: 0,
+        totalAmount: 0,
+        byStatus: {
+          PENDING: { count: 0, amount: 0 },
+          PAID: { count: 0, amount: 0 },
+          OVERDUE: { count: 0, amount: 0 },
+          CANCELLED: { count: 0, amount: 0 },
+        },
+      },
+    );
+
+    return {
+      ...summary,
+      outstandingAmount: summary.byStatus.PENDING.amount + summary.byStatus.OVERDUE.amount,
+      installments,
+    };
+  }
+
   async markOverdueInvoices(currentUser?: any) {
     const now = new Date();
     const result = await this.prisma.feeInvoice.updateMany({
@@ -559,19 +775,30 @@ export class FinanceService {
       },
       data: { status: InvoiceStatus.OVERDUE },
     });
+    const installmentResult = await this.prisma.installment.updateMany({
+      where: {
+        dueDate: { lt: now },
+        status: 'PENDING',
+      },
+      data: { status: 'OVERDUE' },
+    });
 
-    if (result.count > 0) {
+    if (result.count > 0 || installmentResult.count > 0) {
       await this.prisma.auditLog.create({
         data: {
           userId: currentUser?.id || null,
           action: 'INVOICES_MARKED_OVERDUE',
           entity: 'FeeInvoice',
-          metadata: { count: result.count, processedAt: now.toISOString() },
+          metadata: {
+            count: result.count,
+            installmentCount: installmentResult.count,
+            processedAt: now.toISOString(),
+          },
         },
       });
     }
 
-    return { updated: result.count };
+    return { updated: result.count, installmentsUpdated: installmentResult.count };
   }
 
     async updateFeeStructure(id: string, dto: CreateFeeStructureDto) {

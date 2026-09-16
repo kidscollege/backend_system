@@ -17,6 +17,7 @@ import { CreateFeePlanDto } from './dto/create-fee-plan.dto.js';
 import { RefundPaymentDto } from './dto/refund-payment.dto.js';
 import { InitializePaystackDto } from './dto/initialize-paystack.dto.js';
 import { CreatePaymentPlanDto } from './dto/create-payment-plan.dto.js';
+import { CreateFeeAdjustmentDto } from './dto/create-fee-adjustment.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { Roles } from '../auth/decorators/roles.decorator.js';
@@ -51,6 +52,16 @@ export class FinanceController {
   @Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.BURSAR, Role.PRINCIPAL)
   getFeePlans(@Query('studentId') studentId?: string) {
     return this.financeService.getFeePlans(studentId);
+  }
+
+  @Post('fee-plans/:id/adjustments')
+  @Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.BURSAR)
+  createFeeAdjustment(
+    @Param('id') id: string,
+    @Body() dto: CreateFeeAdjustmentDto,
+    @CurrentUser() user: any,
+  ) {
+    return this.financeService.createFeeAdjustment(id, dto, user);
   }
 
   @Post('fee-plans/:id/invoice')
@@ -129,6 +140,12 @@ export class FinanceController {
     return this.financeService.getStudentBalances(studentId);
   }
 
+  @Get('students/:studentId/statement')
+  @Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.BURSAR, Role.PRINCIPAL)
+  getStudentStatement(@Param('studentId') studentId: string) {
+    return this.financeService.getStudentStatement(studentId);
+  }
+
   @Post('invoices/mark-overdue')
   @Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.BURSAR)
   markOverdueInvoices(@CurrentUser() user: any) {
@@ -182,5 +199,11 @@ getPaymentsSummary(
 @Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.BURSAR)
 getReconciliationReport() {
   return this.financeService.getReconciliationReport();
+}
+
+@Get('reports/payment-plans')
+@Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.BURSAR, Role.PRINCIPAL)
+getPaymentPlanSummary() {
+  return this.financeService.getPaymentPlanSummary();
 }
 }
