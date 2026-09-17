@@ -4,6 +4,7 @@ import { AdmissionsService } from './admissions.service.js';
 
 describe('AdmissionsService', () => {
   it('resolves the active academic session and matching class for an applicant', async () => {
+    const create = vi.fn().mockResolvedValue({ id: 'app-1', status: ApplicationStatus.SUBMITTED });
     const prisma = {
       academicSession: {
         findFirst: vi.fn().mockResolvedValue({ id: 'session-1', name: '2025/2026' }),
@@ -32,6 +33,7 @@ describe('AdmissionsService', () => {
   });
 
   it('stores uploaded documents along with the application payload', async () => {
+    const create = vi.fn().mockResolvedValue({ id: 'app-1', status: ApplicationStatus.SUBMITTED });
     const prisma = {
       academicSession: {
         findFirst: vi.fn().mockResolvedValue({ id: 'session-1', name: '2025/2026' }),
@@ -40,9 +42,16 @@ describe('AdmissionsService', () => {
         findFirst: vi.fn().mockResolvedValue({ id: 'class-1', name: 'JSS 1' }),
       },
       admissionApplication: {
-        create: vi.fn().mockResolvedValue({ id: 'app-1', status: ApplicationStatus.SUBMITTED }),
-        count: vi.fn().mockResolvedValue(0),
+        create,
       },
+      $transaction: vi.fn(async (callback: (tx: any) => Promise<unknown>) => callback({
+        numberSequence: {
+          upsert: vi.fn().mockResolvedValue({ nextValue: 2 }),
+        },
+        admissionApplication: {
+          create,
+        },
+      })),
     } as any;
 
     const service = new AdmissionsService(prisma);
@@ -57,7 +66,7 @@ describe('AdmissionsService', () => {
       sessionId: 'session-1',
     } as any);
 
-    expect(prisma.admissionApplication.create).toHaveBeenCalledWith(
+    expect(create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           firstName: 'Ada',
@@ -93,5 +102,23 @@ describe('AdmissionsService', () => {
         status: ApplicationStatus.INTERVIEW_SCHEDULED,
       } as any),
     ).rejects.toThrow('Interview date is required');
+  });
+
+  it('rejects invalid review status jumps', async () => {
+    const prisma = {
+      admissionApplication: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'app-1',
+          status: ApplicationStatus.SUBMITTED,
+          notes: null,
+          student: null,
+        }),
+      },
+    } as any;
+    const service = new AdmissionsService(prisma);
+
+    await expect(service.reviewApplication('app-1', {
+      status: ApplicationStatus.APPROVED,
+    })).rejects.toThrow('Cannot review application from SUBMITTED to APPROVED');
   });
 });

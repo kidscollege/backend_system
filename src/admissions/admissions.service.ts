@@ -15,11 +15,18 @@ import * as bcrypt from 'bcrypt';
 export class AdmissionsService {
   constructor(private prisma: PrismaService) {}
 
-  private async generateApplicationNumber(): Promise<string> {
+  private async nextDocumentNumber(
+    tx: Prisma.TransactionClient,
+    name: string,
+    prefix: string,
+  ): Promise<string> {
+    const sequence = await tx.numberSequence.upsert({
+      where: { name },
+      update: { nextValue: { increment: 1 } },
+      create: { name, nextValue: 2 },
+    });
     const year = new Date().getFullYear().toString().slice(-2);
-    const count = await this.prisma.admissionApplication.count();
-    const next = (count + 1).toString().padStart(4, '0');
-    return `APP${year}${next}`; // e.g. APP260001
+    return `${prefix}${year}${(sequence.nextValue - 1).toString().padStart(4, '0')}`;
   }
 
   async resolveAdmissionPlacement(applyingClass?: string) {
@@ -59,27 +66,29 @@ export class AdmissionsService {
   }
 
   async createApplication(dto: CreateApplicationDto) {
-    const applicationNo = await this.generateApplicationNumber();
     const placement = await this.resolveAdmissionPlacement(dto.applyingClass);
 
-    return this.prisma.admissionApplication.create({
-      data: {
-        applicationNo,
-        firstName: dto.firstName,
-        lastName: dto.lastName,
-        middleName: dto.middleName,
-        gender: dto.gender,
-        dateOfBirth: dto.dateOfBirth ? new Date(dto.dateOfBirth) : null,
-        applyingClass: dto.applyingClass,
-        parentName: dto.parentName,
-        parentPhone: dto.parentPhone,
-        parentEmail: dto.parentEmail,
-        notes: dto.notes,
-        documents: dto.documents
-          ? (dto.documents as unknown as Prisma.InputJsonValue)
-          : undefined,
-        status: ApplicationStatus.SUBMITTED,
-      },
+    return this.prisma.$transaction(async (tx) => {
+      const applicationNo = await this.nextDocumentNumber(tx, 'admission_application', 'APP');
+      return tx.admissionApplication.create({
+        data: {
+          applicationNo,
+          firstName: dto.firstName,
+          lastName: dto.lastName,
+          middleName: dto.middleName,
+          gender: dto.gender,
+          dateOfBirth: dto.dateOfBirth ? new Date(dto.dateOfBirth) : null,
+          applyingClass: dto.applyingClass,
+          parentName: dto.parentName,
+          parentPhone: dto.parentPhone,
+          parentEmail: dto.parentEmail,
+          notes: dto.notes,
+          documents: dto.documents
+            ? (dto.documents as unknown as Prisma.InputJsonValue)
+            : undefined,
+          status: ApplicationStatus.SUBMITTED,
+        },
+      });
     });
   }
 
@@ -124,6 +133,24 @@ export class AdmissionsService {
     ) {
       throw new BadRequestException(
         `Application is already ${application.status}`,
+      );
+    }
+
+    const reviewableTransitions: Record<ApplicationStatus, ApplicationStatus[]> = {
+      [ApplicationStatus.SUBMITTED]: [ApplicationStatus.UNDER_REVIEW],
+      [ApplicationStatus.UNDER_REVIEW]: [ApplicationStatus.APPROVED, ApplicationStatus.REJECTED],
+      [ApplicationStatus.INTERVIEW_SCHEDULED]: [ApplicationStatus.APPROVED, ApplicationStatus.REJECTED],
+      [ApplicationStatus.APPROVED]: [],
+      [ApplicationStatus.OFFER_SENT]: [],
+      [ApplicationStatus.ACCEPTED]: [],
+      [ApplicationStatus.REJECTED]: [],
+      [ApplicationStatus.ADMITTED]: [],
+      [ApplicationStatus.WITHDRAWN]: [],
+    };
+
+    if (!reviewableTransitions[application.status].includes(dto.status)) {
+      throw new BadRequestException(
+        `Cannot review application from ${application.status} to ${dto.status}`,
       );
     }
 
@@ -236,15 +263,12 @@ export class AdmissionsService {
     }
 
     // Generate admission number
-    const year = new Date().getFullYear().toString().slice(-2);
-    const count = await this.prisma.student.count();
-    const next = (count + 1).toString().padStart(4, '0');
-    const admissionNumber = `ADM${year}${next}`;
     const placement = await this.resolveAdmissionPlacement(
       application.applyingClass ?? undefined,
     );
 
     const result = await this.prisma.$transaction(async (tx) => {
+      const admissionNumber = await this.nextDocumentNumber(tx, 'student_admission', 'ADM');
       // Create Student
       const student = await tx.student.create({
         data: {
