@@ -147,4 +147,36 @@ describe('AdmissionsService', () => {
       data: expect.objectContaining({ interviewOutcome: 'Recommended for admission' }),
     }));
   });
+
+  it('returns offer details only for approved applications', async () => {
+    const prisma = {
+      admissionApplication: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'app-1',
+          applicationNo: 'APP260001',
+          status: ApplicationStatus.APPROVED,
+          firstName: 'Ada',
+          middleName: null,
+          lastName: 'Okafor',
+          parentName: 'Grace Okafor',
+          parentEmail: 'grace@example.com',
+          parentPhone: '08000000000',
+          applyingClass: 'JSS 1',
+          interviewDate: null,
+          interviewOutcome: 'Recommended',
+          offerSentAt: null,
+          acceptedAt: null,
+          student: null,
+        }),
+      },
+    } as any;
+    const service = new AdmissionsService(prisma);
+
+    await expect(service.getOfferDetails('app-1')).resolves.toMatchObject({
+      applicationNo: 'APP260001',
+      applicant: { firstName: 'Ada', lastName: 'Okafor' },
+      applyingClass: 'JSS 1',
+      interviewOutcome: 'Recommended',
+    });
+  });
 });

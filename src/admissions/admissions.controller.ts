@@ -44,6 +44,13 @@ export class AdmissionsController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('applications/:id/offer')
+  @Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.PRINCIPAL, Role.HR_ADMIN)
+  getOfferDetails(@Param('id') id: string) {
+    return this.admissionsService.getOfferDetails(id);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Patch('applications/:id/review')
   @Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.PRINCIPAL)
   review(

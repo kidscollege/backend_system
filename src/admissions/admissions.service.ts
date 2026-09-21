@@ -114,6 +114,46 @@ export class AdmissionsService {
     return application;
   }
 
+  async getOfferDetails(id: string) {
+    const application = await this.findOne(id);
+    const eligibleStatuses: ApplicationStatus[] = [
+      ApplicationStatus.APPROVED,
+      ApplicationStatus.OFFER_SENT,
+      ApplicationStatus.ACCEPTED,
+      ApplicationStatus.ADMITTED,
+    ];
+
+    if (!eligibleStatuses.includes(application.status)) {
+      throw new BadRequestException('An offer is only available after approval');
+    }
+
+    return {
+      applicationNo: application.applicationNo,
+      applicant: {
+        firstName: application.firstName,
+        middleName: application.middleName,
+        lastName: application.lastName,
+      },
+      parent: {
+        name: application.parentName,
+        email: application.parentEmail,
+        phone: application.parentPhone,
+      },
+      applyingClass: application.applyingClass,
+      status: application.status,
+      interviewDate: application.interviewDate,
+      interviewOutcome: application.interviewOutcome,
+      offerSentAt: application.offerSentAt,
+      acceptedAt: application.acceptedAt,
+      admittedStudent: application.student
+        ? {
+            id: application.student.id,
+            admissionNumber: application.student.admissionNumber,
+          }
+        : null,
+    };
+  }
+
   async reviewApplication(
     id: string,
     dto: ReviewApplicationDto,
