@@ -219,6 +219,7 @@ export class AdmissionsService {
         reviewedById,
         reviewedAt: now,
         interviewDate: dto.interviewDate ? new Date(dto.interviewDate) : undefined,
+        interviewOutcome: dto.interviewOutcome,
         offerSentAt: dto.status === ApplicationStatus.OFFER_SENT ? now : undefined,
         acceptedAt: dto.status === ApplicationStatus.ACCEPTED ? now : undefined,
       },

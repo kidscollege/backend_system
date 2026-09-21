@@ -121,4 +121,30 @@ describe('AdmissionsService', () => {
       status: ApplicationStatus.APPROVED,
     })).rejects.toThrow('Cannot review application from SUBMITTED to APPROVED');
   });
+
+  it('stores an interview outcome when advancing an application', async () => {
+    const update = vi.fn().mockResolvedValue({ id: 'app-1', status: ApplicationStatus.APPROVED });
+    const prisma = {
+      admissionApplication: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'app-1',
+          status: ApplicationStatus.INTERVIEW_SCHEDULED,
+          notes: null,
+          student: null,
+        }),
+        update,
+      },
+      auditLog: { create: vi.fn().mockResolvedValue({}) },
+    } as any;
+    const service = new AdmissionsService(prisma);
+
+    await service.advanceApplication('app-1', {
+      status: ApplicationStatus.APPROVED,
+      interviewOutcome: 'Recommended for admission',
+    }, 'reviewer-1');
+
+    expect(update).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ interviewOutcome: 'Recommended for admission' }),
+    }));
+  });
 });

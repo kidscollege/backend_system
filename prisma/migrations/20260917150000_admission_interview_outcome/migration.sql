@@ -1,0 +1,1 @@
+ALTER TABLE "AdmissionApplication" ADD COLUMN "interviewOutcome" TEXT;

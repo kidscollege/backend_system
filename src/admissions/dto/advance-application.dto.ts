@@ -12,4 +12,8 @@ export class AdvanceApplicationDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @IsOptional()
+  @IsString()
+  interviewOutcome?: string;
 }
