@@ -165,6 +165,7 @@ describe('AdmissionsService', () => {
           interviewDate: null,
           interviewOutcome: 'Recommended',
           offerSentAt: null,
+          offerExpiresAt: new Date('2026-10-01T00:00:00.000Z'),
           acceptedAt: null,
           student: null,
         }),
@@ -178,5 +179,23 @@ describe('AdmissionsService', () => {
       applyingClass: 'JSS 1',
       interviewOutcome: 'Recommended',
     });
+  });
+
+  it('requires an expiry date when sending an admission offer', async () => {
+    const prisma = {
+      admissionApplication: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'app-1',
+          status: ApplicationStatus.APPROVED,
+          notes: null,
+          student: null,
+        }),
+      },
+    } as any;
+    const service = new AdmissionsService(prisma);
+
+    await expect(service.advanceApplication('app-1', {
+      status: ApplicationStatus.OFFER_SENT,
+    })).rejects.toThrow('Offer expiry date is required');
   });
 });

@@ -144,6 +144,7 @@ export class AdmissionsService {
       interviewDate: application.interviewDate,
       interviewOutcome: application.interviewOutcome,
       offerSentAt: application.offerSentAt,
+      offerExpiresAt: application.offerExpiresAt,
       acceptedAt: application.acceptedAt,
       admittedStudent: application.student
         ? {
@@ -250,6 +251,14 @@ export class AdmissionsService {
       throw new BadRequestException('Interview date is required');
     }
 
+    if (dto.status === ApplicationStatus.OFFER_SENT && !dto.offerExpiresAt) {
+      throw new BadRequestException('Offer expiry date is required');
+    }
+
+    if (dto.status === ApplicationStatus.ACCEPTED && application.offerExpiresAt && application.offerExpiresAt < new Date()) {
+      throw new BadRequestException('The admission offer has expired');
+    }
+
     const now = new Date();
     const updated = await this.prisma.admissionApplication.update({
       where: { id },
@@ -261,6 +270,7 @@ export class AdmissionsService {
         interviewDate: dto.interviewDate ? new Date(dto.interviewDate) : undefined,
         interviewOutcome: dto.interviewOutcome,
         offerSentAt: dto.status === ApplicationStatus.OFFER_SENT ? now : undefined,
+        offerExpiresAt: dto.offerExpiresAt ? new Date(dto.offerExpiresAt) : undefined,
         acceptedAt: dto.status === ApplicationStatus.ACCEPTED ? now : undefined,
       },
     });

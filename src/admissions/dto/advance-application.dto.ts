@@ -16,4 +16,8 @@ export class AdvanceApplicationDto {
   @IsOptional()
   @IsString()
   interviewOutcome?: string;
+
+  @IsOptional()
+  @IsDateString()
+  offerExpiresAt?: string;
 }
