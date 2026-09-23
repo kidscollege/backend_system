@@ -14,6 +14,27 @@ import { BulkRecordScoresDto } from './dto/bulk-record-scores.dto.js';
 export class ResultsService {
   constructor(private prisma: PrismaService) {}
 
+  private calculateGrade(score: number | null, maxScore: number) {
+    if (score === null || maxScore <= 0) {
+      return { percentage: null, grade: null, remark: null };
+    }
+
+    const percentage = Number(((score / maxScore) * 100).toFixed(2));
+    const band = percentage >= 75
+      ? { grade: 'A', remark: 'Excellent' }
+      : percentage >= 65
+        ? { grade: 'B', remark: 'Very Good' }
+        : percentage >= 55
+          ? { grade: 'C', remark: 'Good' }
+          : percentage >= 45
+            ? { grade: 'D', remark: 'Pass' }
+            : percentage >= 40
+              ? { grade: 'E', remark: 'Weak Pass' }
+              : { grade: 'F', remark: 'Fail' };
+
+    return { percentage, ...band };
+  }
+
   private async assertTeacherCanAccessSubject(
     currentUser: any,
     subjectId?: string,
@@ -361,7 +382,10 @@ export class ResultsService {
         firstName: student.firstName,
         lastName: student.lastName,
       },
-      scores,
+      scores: scores.map((score) => ({
+        ...score,
+        grading: this.calculateGrade(score.score, score.assessment.maxScore),
+      })),
     };
   }
 
@@ -408,6 +432,7 @@ export class ResultsService {
         student,
         score: scoreRecord?.score ?? null,
         remark: scoreRecord?.remark ?? null,
+        grading: this.calculateGrade(scoreRecord?.score ?? null, assessment.maxScore),
       };
     });
 

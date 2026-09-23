@@ -2,6 +2,36 @@ import { describe, it, expect, vi } from 'vitest';
 import { ResultsService } from './results.service.js';
 
 describe('ResultsService assessment management', () => {
+  it('calculates percentage and grade bands for class results', async () => {
+    const prisma = {
+      assessment: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'assessment-1',
+          subjectId: 'subject-1',
+          maxScore: 100,
+          subject: { name: 'Mathematics' },
+          term: { name: 'First Term' },
+        }),
+      },
+      classSubject: { findFirst: vi.fn() },
+      student: {
+        findMany: vi.fn().mockResolvedValue([
+          { id: 'student-1', admissionNumber: 'ADM-1', firstName: 'Ada', lastName: 'Cole' },
+        ]),
+      },
+      studentAssessment: {
+        findMany: vi.fn().mockResolvedValue([
+          { studentId: 'student-1', score: 82, remark: null },
+        ]),
+      },
+    } as any;
+    const service = new ResultsService(prisma);
+
+    await expect(service.getClassResults('class-1', 'assessment-1')).resolves.toMatchObject({
+      results: [{ score: 82, grading: { percentage: 82, grade: 'A', remark: 'Excellent' } }],
+    });
+  });
+
   it('updates an assessment when valid values are supplied', async () => {
     const prisma = {
       assessment: {
