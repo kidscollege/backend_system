@@ -44,6 +44,11 @@ describe('ResultsService assessment management', () => {
       subject: {
         findUnique: vi.fn().mockResolvedValue({ id: 'subject-1' }),
       },
+      assessment: {
+        findUnique: vi.fn().mockResolvedValue({ id: 'assessment-1' }),
+        update: vi.fn().mockResolvedValue({ id: 'assessment-1', name: 'CA2', maxScore: 30 }),
+        aggregate: vi.fn().mockResolvedValue({ _sum: { weight: 0 } }),
+      },
     } as any;
 
     const service = new ResultsService(prisma);
@@ -87,5 +92,18 @@ describe('ResultsService assessment management', () => {
       where: { id: 'assessment-1' },
     });
     expect(result.id).toBe('assessment-1');
+  });
+
+  it('rejects assessment weights above the subject-term total', async () => {
+    const prisma = {
+      term: { findUnique: vi.fn().mockResolvedValue({ id: 'term-1' }) },
+      subject: { findUnique: vi.fn().mockResolvedValue({ id: 'subject-1' }) },
+      assessment: { aggregate: vi.fn().mockResolvedValue({ _sum: { weight: 90 } }) },
+    } as any;
+    const service = new ResultsService(prisma);
+
+    await expect(service.createAssessment({
+      termId: 'term-1', subjectId: 'subject-1', name: 'Exam', maxScore: 60, weight: 20,
+    })).rejects.toThrow('Assessment weights for a subject and term cannot exceed 100');
   });
 });

@@ -73,6 +73,9 @@ export class ResultsService {
 
   async createAssessment(dto: CreateAssessmentDto, currentUser?: any) {
     await this.assertTeacherCanAccessSubject(currentUser, dto.subjectId);
+    if (dto.weight !== undefined && (dto.weight < 0 || dto.weight > 100)) {
+      throw new BadRequestException('Assessment weight must be between 0 and 100');
+    }
     const term = await this.prisma.term.findUnique({
       where: { id: dto.termId },
     });
@@ -82,6 +85,14 @@ export class ResultsService {
       where: { id: dto.subjectId },
     });
     if (!subject) throw new NotFoundException('Subject not found');
+
+    const existingWeight = await this.prisma.assessment.aggregate({
+      where: { termId: dto.termId, subjectId: dto.subjectId },
+      _sum: { weight: true },
+    });
+    if ((existingWeight._sum.weight ?? 0) + (dto.weight ?? 0) > 100) {
+      throw new BadRequestException('Assessment weights for a subject and term cannot exceed 100');
+    }
 
     return this.prisma.assessment.create({
       data: {
@@ -181,6 +192,22 @@ export class ResultsService {
 
     if (dto.maxScore !== undefined && dto.maxScore < 1) {
       throw new BadRequestException('Max score must be at least 1');
+    }
+
+    if (dto.weight !== undefined && (dto.weight < 0 || dto.weight > 100)) {
+      throw new BadRequestException('Assessment weight must be between 0 and 100');
+    }
+
+    if (dto.weight !== undefined || dto.termId || dto.subjectId) {
+      const termId = dto.termId ?? assessment.termId;
+      const subjectId = dto.subjectId ?? assessment.subjectId;
+      const existingWeight = await this.prisma.assessment.aggregate({
+        where: { termId, subjectId, id: { not: id } },
+        _sum: { weight: true },
+      });
+      if ((existingWeight._sum.weight ?? 0) + (dto.weight ?? assessment.weight ?? 0) > 100) {
+        throw new BadRequestException('Assessment weights for a subject and term cannot exceed 100');
+      }
     }
 
     return this.prisma.assessment.update({
@@ -384,7 +411,12 @@ export class ResultsService {
       },
       scores: scores.map((score) => ({
         ...score,
-        grading: this.calculateGrade(score.score, score.assessment.maxScore),
+        grading: {
+          ...this.calculateGrade(score.score, score.assessment.maxScore),
+          weightedContribution: score.score === null || !score.assessment.weight
+            ? null
+            : Number((((score.score / score.assessment.maxScore) * score.assessment.weight)).toFixed(2)),
+        },
       })),
     };
   }

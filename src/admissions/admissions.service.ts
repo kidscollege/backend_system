@@ -155,6 +155,22 @@ export class AdmissionsService {
     };
   }
 
+  async getApplicationTimeline(id: string) {
+    await this.findOne(id);
+
+    return this.prisma.auditLog.findMany({
+      where: { entity: 'AdmissionApplication', entityId: id },
+      select: {
+        id: true,
+        action: true,
+        metadata: true,
+        createdAt: true,
+        user: { select: { firstName: true, lastName: true, email: true } },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
   async reviewApplication(
     id: string,
     dto: ReviewApplicationDto,

@@ -198,4 +198,21 @@ describe('AdmissionsService', () => {
       status: ApplicationStatus.OFFER_SENT,
     })).rejects.toThrow('Offer expiry date is required');
   });
+
+  it('returns the application audit timeline in chronological order', async () => {
+    const timeline = [{ id: 'log-1', action: 'ADMISSION_REVIEW' }];
+    const prisma = {
+      admissionApplication: {
+        findUnique: vi.fn().mockResolvedValue({ id: 'app-1', student: null }),
+      },
+      auditLog: { findMany: vi.fn().mockResolvedValue(timeline) },
+    } as any;
+    const service = new AdmissionsService(prisma);
+
+    await expect(service.getApplicationTimeline('app-1')).resolves.toEqual(timeline);
+    expect(prisma.auditLog.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: { entity: 'AdmissionApplication', entityId: 'app-1' },
+      orderBy: { createdAt: 'asc' },
+    }));
+  });
 });

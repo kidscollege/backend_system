@@ -51,6 +51,13 @@ export class AdmissionsController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('applications/:id/timeline')
+  @Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.PRINCIPAL, Role.HR_ADMIN)
+  getApplicationTimeline(@Param('id') id: string) {
+    return this.admissionsService.getApplicationTimeline(id);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Patch('applications/:id/review')
   @Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.PRINCIPAL)
   review(
