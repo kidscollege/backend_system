@@ -9,30 +9,73 @@ import { CreateAssessmentDto } from './dto/create-assessment.dto.js';
 import { UpdateAssessmentDto } from './dto/update-assessment.dto.js';
 import { RecordScoreDto } from './dto/record-score.dto.js';
 import { BulkRecordScoresDto } from './dto/bulk-record-scores.dto.js';
+import { CreateGradingSchemeDto } from './dto/create-grading-scheme.dto.js';
+
+type GradingBand = {
+  minPercentage: number;
+  grade: string;
+  remark: string;
+};
 
 @Injectable()
 export class ResultsService {
   constructor(private prisma: PrismaService) {}
 
-  private calculateGrade(score: number | null, maxScore: number) {
+  private readonly defaultGradingBands: GradingBand[] = [
+    { minPercentage: 75, grade: 'A', remark: 'Excellent' },
+    { minPercentage: 65, grade: 'B', remark: 'Very Good' },
+    { minPercentage: 55, grade: 'C', remark: 'Good' },
+    { minPercentage: 45, grade: 'D', remark: 'Pass' },
+    { minPercentage: 40, grade: 'E', remark: 'Weak Pass' },
+    { minPercentage: 0, grade: 'F', remark: 'Fail' },
+  ];
+
+  private async getGradingBands() {
+    if (!this.prisma.gradingScheme) return this.defaultGradingBands;
+    const scheme = await this.prisma.gradingScheme.findFirst({
+      where: { isActive: true },
+      select: { bands: true },
+    });
+    return Array.isArray(scheme?.bands) && scheme.bands.length
+      ? scheme.bands as GradingBand[]
+      : this.defaultGradingBands;
+  }
+
+  private calculateGrade(
+    score: number | null,
+    maxScore: number,
+    bands = this.defaultGradingBands,
+  ) {
     if (score === null || maxScore <= 0) {
       return { percentage: null, grade: null, remark: null };
     }
 
     const percentage = Number(((score / maxScore) * 100).toFixed(2));
-    const band = percentage >= 75
-      ? { grade: 'A', remark: 'Excellent' }
-      : percentage >= 65
-        ? { grade: 'B', remark: 'Very Good' }
-        : percentage >= 55
-          ? { grade: 'C', remark: 'Good' }
-          : percentage >= 45
-            ? { grade: 'D', remark: 'Pass' }
-            : percentage >= 40
-              ? { grade: 'E', remark: 'Weak Pass' }
-              : { grade: 'F', remark: 'Fail' };
+    const band = [...bands]
+      .sort((left, right) => right.minPercentage - left.minPercentage)
+      .find((item) => percentage >= item.minPercentage) ?? this.defaultGradingBands.at(-1)!;
 
     return { percentage, ...band };
+  }
+
+  async createGradingScheme(dto: CreateGradingSchemeDto) {
+    const school = await this.prisma.school.findFirst();
+    if (!school) throw new BadRequestException('No school found');
+    if (!dto.bands.length) throw new BadRequestException('At least one grading band is required');
+    if (dto.bands.some((band) => band.minPercentage < 0 || band.minPercentage > 100)) {
+      throw new BadRequestException('Grading band minimums must be between 0 and 100');
+    }
+
+    return this.prisma.gradingScheme.upsert({
+      where: { schoolId: school.id },
+      update: { name: dto.name, bands: dto.bands, isActive: true },
+      create: { schoolId: school.id, name: dto.name, bands: dto.bands },
+    });
+  }
+
+  async getGradingScheme() {
+    if (!this.prisma.gradingScheme) return null;
+    return this.prisma.gradingScheme.findFirst({ where: { isActive: true } });
   }
 
   private async assertTeacherCanAccessSubject(
@@ -380,7 +423,8 @@ export class ResultsService {
       await this.assertTeacherCanAccessSubject(currentUser, undefined, student.currentClassId ?? undefined);
     }
 
-    const scores = await this.prisma.studentAssessment.findMany({
+    const [scores, bands] = await Promise.all([
+      this.prisma.studentAssessment.findMany({
       where: {
         studentId,
         ...(termId && {
@@ -400,7 +444,9 @@ export class ResultsService {
           subject: { name: 'asc' },
         },
       },
-    });
+      }),
+      this.getGradingBands(),
+    ]);
 
     return {
       student: {
@@ -412,7 +458,7 @@ export class ResultsService {
       scores: scores.map((score) => ({
         ...score,
         grading: {
-          ...this.calculateGrade(score.score, score.assessment.maxScore),
+          ...this.calculateGrade(score.score, score.assessment.maxScore, bands),
           weightedContribution: score.score === null || !score.assessment.weight
             ? null
             : Number((((score.score / score.assessment.maxScore) * score.assessment.weight)).toFixed(2)),
@@ -455,6 +501,7 @@ export class ResultsService {
         studentId: { in: students.map((s) => s.id) },
       },
     });
+    const bands = await this.getGradingBands();
 
     const scoreMap = new Map(scores.map((s) => [s.studentId, s]));
 
@@ -464,7 +511,7 @@ export class ResultsService {
         student,
         score: scoreRecord?.score ?? null,
         remark: scoreRecord?.remark ?? null,
-        grading: this.calculateGrade(scoreRecord?.score ?? null, assessment.maxScore),
+        grading: this.calculateGrade(scoreRecord?.score ?? null, assessment.maxScore, bands),
       };
     });
 

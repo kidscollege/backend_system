@@ -14,6 +14,7 @@ import { CreateAssessmentDto } from './dto/create-assessment.dto.js';
 import { UpdateAssessmentDto } from './dto/update-assessment.dto.js';
 import { RecordScoreDto } from './dto/record-score.dto.js';
 import { BulkRecordScoresDto } from './dto/bulk-record-scores.dto.js';
+import { CreateGradingSchemeDto } from './dto/create-grading-scheme.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { Roles } from '../auth/decorators/roles.decorator.js';
@@ -24,6 +25,18 @@ import { Role } from '@prisma/client';
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class ResultsController {
   constructor(private readonly resultsService: ResultsService) {}
+
+  @Post('grading-schemes')
+  @Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.PRINCIPAL)
+  createGradingScheme(@Body() dto: CreateGradingSchemeDto) {
+    return this.resultsService.createGradingScheme(dto);
+  }
+
+  @Get('grading-schemes/current')
+  @Roles(Role.SUPER_ADMIN, Role.MANAGEMENT, Role.PRINCIPAL, Role.TEACHER)
+  getGradingScheme() {
+    return this.resultsService.getGradingScheme();
+  }
 
   // Assessments
   @Post('assessments')

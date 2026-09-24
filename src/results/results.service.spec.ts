@@ -24,11 +24,19 @@ describe('ResultsService assessment management', () => {
           { studentId: 'student-1', score: 82, remark: null },
         ]),
       },
+      gradingScheme: {
+        findFirst: vi.fn().mockResolvedValue({
+          bands: [
+            { minPercentage: 80, grade: 'Distinction', remark: 'Outstanding' },
+            { minPercentage: 0, grade: 'Needs Support', remark: 'Review required' },
+          ],
+        }),
+      },
     } as any;
     const service = new ResultsService(prisma);
 
     await expect(service.getClassResults('class-1', 'assessment-1')).resolves.toMatchObject({
-      results: [{ score: 82, grading: { percentage: 82, grade: 'A', remark: 'Excellent' } }],
+      results: [{ score: 82, grading: { percentage: 82, grade: 'Distinction', remark: 'Outstanding' } }],
     });
   });
 

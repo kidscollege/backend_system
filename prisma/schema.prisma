@@ -87,6 +87,19 @@ model School {
   campuses    Campus[]
   sessions    AcademicSession[]
   departments Department[]
+  gradingScheme GradingScheme?
+}
+
+model GradingScheme {
+  id        String   @id @default(cuid())
+  schoolId  String   @unique
+  name      String
+  bands     Json
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
 }
 
 model Campus {
