@@ -114,4 +114,43 @@ describe('ResultsService assessment management', () => {
       termId: 'term-1', subjectId: 'subject-1', name: 'Exam', maxScore: 60, weight: 20,
     })).rejects.toThrow('Assessment weights for a subject and term cannot exceed 100');
   });
+
+  it('returns subject and overall result summaries', async () => {
+    const prisma = {
+      student: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'student-1',
+          admissionNumber: 'ADM-1',
+          firstName: 'Ada',
+          lastName: 'Cole',
+          currentClassId: 'class-1',
+        }),
+      },
+      studentAssessment: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: 'score-1',
+            studentId: 'student-1',
+            score: 18,
+            assessment: {
+              subjectId: 'subject-1',
+              maxScore: 20,
+              weight: 20,
+              subject: { id: 'subject-1', name: 'Mathematics' },
+              term: { name: 'First Term' },
+            },
+          },
+        ]),
+      },
+      gradingScheme: { findFirst: vi.fn().mockResolvedValue(null) },
+    } as any;
+    const service = new ResultsService(prisma);
+
+    await expect(service.getStudentResults('student-1')).resolves.toMatchObject({
+      summaries: {
+        subjects: [{ subjectName: 'Mathematics', score: 18, maxScore: 20, percentage: 90 }],
+        overall: { score: 18, maxScore: 20, percentage: 90, grading: { grade: 'A' } },
+      },
+    });
+  });
 });

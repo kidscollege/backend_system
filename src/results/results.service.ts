@@ -448,6 +448,55 @@ export class ResultsService {
       this.getGradingBands(),
     ]);
 
+    const gradedScores = scores.map((score) => ({
+      ...score,
+      grading: {
+        ...this.calculateGrade(score.score, score.assessment.maxScore, bands),
+        weightedContribution: score.score === null || !score.assessment.weight
+          ? null
+          : Number((((score.score / score.assessment.maxScore) * score.assessment.weight)).toFixed(2)),
+      },
+    }));
+    const subjectTotals = new Map<string, {
+      subjectId: string;
+      subjectName: string;
+      score: number;
+      maxScore: number;
+      weightedContribution: number;
+    }>();
+
+    for (const item of gradedScores) {
+      const subjectId = item.assessment.subjectId;
+      const current = subjectTotals.get(subjectId) ?? {
+        subjectId,
+        subjectName: item.assessment.subject.name,
+        score: 0,
+        maxScore: 0,
+        weightedContribution: 0,
+      };
+      current.score += item.score ?? 0;
+      current.maxScore += item.assessment.maxScore;
+      current.weightedContribution += item.grading.weightedContribution ?? 0;
+      subjectTotals.set(subjectId, current);
+    }
+
+    const subjects = [...subjectTotals.values()].map((subject) => {
+      const percentage = subject.maxScore > 0
+        ? Number(((subject.score / subject.maxScore) * 100).toFixed(2))
+        : null;
+      return {
+        ...subject,
+        percentage,
+        weightedContribution: Number(subject.weightedContribution.toFixed(2)),
+        grading: this.calculateGrade(percentage, 100, bands),
+      };
+    });
+    const overallScore = subjects.reduce((sum, subject) => sum + subject.score, 0);
+    const overallMaxScore = subjects.reduce((sum, subject) => sum + subject.maxScore, 0);
+    const overallPercentage = overallMaxScore > 0
+      ? Number(((overallScore / overallMaxScore) * 100).toFixed(2))
+      : null;
+
     return {
       student: {
         id: student.id,
@@ -455,15 +504,16 @@ export class ResultsService {
         firstName: student.firstName,
         lastName: student.lastName,
       },
-      scores: scores.map((score) => ({
-        ...score,
-        grading: {
-          ...this.calculateGrade(score.score, score.assessment.maxScore, bands),
-          weightedContribution: score.score === null || !score.assessment.weight
-            ? null
-            : Number((((score.score / score.assessment.maxScore) * score.assessment.weight)).toFixed(2)),
+      scores: gradedScores,
+      summaries: {
+        subjects,
+        overall: {
+          score: overallScore,
+          maxScore: overallMaxScore,
+          percentage: overallPercentage,
+          grading: this.calculateGrade(overallPercentage, 100, bands),
         },
-      })),
+      },
     };
   }
 
